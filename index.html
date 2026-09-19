@@ -450,7 +450,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.7</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.8</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -1099,7 +1099,7 @@ function applyShelf(g,shelf){
 async function persistTrack(id){
   const g=ownedGame(id);
   await saveLibrary();refreshAll();
-  const a=document.getElementById("trackArea");
+  const a=mEl("trackArea");
   if(a&&CUR&&CUR.id===id)a.innerHTML=trackB(id,CUR.det,g);
   document.querySelectorAll('.plus[data-gid="'+id+'"]').forEach(b=>{const sp=document.createElement("span");sp.className=b.className.replace("plus","added");sp.textContent="✓";b.replaceWith(sp);});
   if(g)cacheCover(g).then(()=>queueSave());
@@ -1186,8 +1186,8 @@ function trackEdit(l){
     <div class="actions"><button class="primary" onclick="saveGame()">Save</button><button onclick="backToTrack()">Cancel</button></div>
   </div>`;
 }
-function backToTrack(){const g=ownedGame(CUR.id);document.getElementById("trackArea").innerHTML=trackB(CUR.id,CUR.det,g);}
-function editTracking(){document.getElementById("trackArea").innerHTML=trackEdit(LIB.games.find(g=>g.igdbId===CUR.id));}
+function backToTrack(){const g=ownedGame(CUR.id);const t=mEl("trackArea");if(t)t.innerHTML=trackB(CUR.id,CUR.det,g);}
+function editTracking(){const t=mEl("trackArea");if(t)t.innerHTML=trackEdit(LIB.games.find(g=>g.igdbId===CUR.id));}
 const COLL_CACHE={};
 async function loadCollection(id,det){
   let items=COLL_CACHE[id];
@@ -1215,7 +1215,7 @@ async function loadCollection(id,det){
   renderCollArea(id,items);
 }
 function renderCollArea(id,items){
-  const box=document.getElementById("collArea"); if(!box)return;
+  const box=mEl("collArea"); if(!box)return;
   if(!items.length){box.innerHTML=`<div class="mt" style="color:var(--dim2);font-size:12px">No sub-games listed for this collection in IGDB.</div>`;return;}
   const played=items.filter(m=>{const o=ownedGame(m.id);return o&&o.completed;}).length;
   const pct=Math.round(played/items.length*100);
@@ -1312,10 +1312,10 @@ async function loadMedia(id,det){
   if(!(CUR&&CUR.id===id))return;
   // point the "Top review" link at the #1 review
   const top=media.reviews[0];
-  const a=document.getElementById("ytlink");
+  const a=mEl("ytlink");
   if(a&&top&&top.videoId){a.href=YTW(top.videoId);a.textContent="▶ Top review"+(top.channel?" · "+top.channel:"")+" ↗";a.onclick=(e)=>{e.preventDefault();playVideo(top.videoId,encodeURIComponent(top.title||""));};}
   // render the media rows
-  const box=document.getElementById("mediaArea");if(!box)return;
+  const box=mEl("mediaArea");if(!box)return;
   let html="";
   if(media.trailers.length)
     html+=`<div class="mrow"><div class="mrowlab">🎬 Trailers <span>· official</span></div><div class="mscroll">${media.trailers.map(t=>mediaCard(t.videoId,t.name,"",false)).join("")}</div></div>`;
@@ -1362,7 +1362,7 @@ async function quickAdd(id,seg){
     b.replaceWith(sp);
   });
   // if the editorial detail for this game is underneath, refresh its tracking area
-  const ta=document.getElementById("trackArea");
+  const ta=mEl("trackArea");
   if(ta&&CUR&&CUR.id===id) ta.innerHTML=trackB(CUR.id,CUR.det,g);
   toast((existing?"Updated · ":"Added to ")+SHELF_LABEL[seg]);
   cacheCover(g).then(()=>queueSave());
@@ -1382,7 +1382,7 @@ async function saveGame(){
   g.price=document.getElementById("d-price").value||null;
   g.notes=document.getElementById("d-notes").value||"";
   await saveLibrary();refreshAll();
-  const a=document.getElementById("trackArea");if(a&&CUR)a.innerHTML=trackB(CUR.id,CUR.det,ownedGame(CUR.id));
+  const a=mEl("trackArea");if(a&&CUR)a.innerHTML=trackB(CUR.id,CUR.det,ownedGame(CUR.id));
   toast("Saved");
 }
 async function removeGame(id){
@@ -1412,6 +1412,8 @@ function setModal(html){
   layer.querySelector(".sheet").innerHTML=html;
   return layer;
 }
+// find an element inside the TOP-most modal sheet (avoids duplicate-id clashes when game detail is opened over another, e.g. from a collection roster)
+function mEl(id){const r=document.getElementById("modalRoot");const top=r&&r.lastElementChild;return (top&&top.querySelector("#"+id))||document.getElementById(id);}
 function closeModal(){
   const root=document.getElementById("modalRoot");
   if(root.lastElementChild) root.removeChild(root.lastElementChild);
