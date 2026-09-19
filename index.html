@@ -455,7 +455,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.4</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -1217,8 +1217,14 @@ async function loadCollection(id,det){
     const isModern=t=>yearOf(t)>=2015;
     // walk the whole port chain to the real original (IGDB can nest ports 2+ deep, e.g. Switch port -> Shindou port -> Super Mario 64)
     const originalOf=async m=>{ if(!isModern(m))return m; let cur=m; for(let h=0;h<6;h++){ const pid=parentOf(cur); if(!pid)break; const par=await fetchId(pid); if(!par)break; cur=par; } return cur; };
+    // region-twin cleanup: when a bundle lists BOTH a localized port (type 11 / version) AND its source original,
+    // drop the source and keep the port — hides the JP "Akumajou Densetsu" next to NA "Castlevania III". Remakes(8) are never twins.
+    const mids=new Set(members.map(m=>m.id));
+    const drop=new Set();
+    members.forEach(m=>{const pid=parentOf(m); if(pid&&mids.has(pid))drop.add(pid);});
     const seen={}; items=[];
     for(const m of members){
+      if(drop.has(m.id))continue;      // this member is superseded by a localized sibling in the same bundle
       const src=await originalOf(m);   // prefer the ORIGINAL game
       if(seen[src.id])continue; seen[src.id]=1;
       items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
@@ -1269,7 +1275,11 @@ async function openGame(id){
   const pmap={};
   (det.platforms||[]).forEach(p=>{if(p&&p.id)pmap[p.id]=p;});
   (fam||[]).forEach(x=>(x.platforms||[]).forEach(p=>{if(p&&p.id)pmap[p.id]=p;}));
-  det.allPlatforms=Object.values(pmap);   // union of this game + its re-releases, for the tracking console picker
+  // also fold in ANCESTOR platforms (the original this entry is a remake/port of) — e.g. Crash N-Sane remake -> PS1 original, so PS1 shows in the picker
+  const anc=[det.parent_game,det.version_parent].filter(Boolean);
+  if(anc.length){const ap=await igdb("games",`fields platforms.id,platforms.name,parent_game,version_parent; where id=(${[...new Set(anc)].join(",")}); limit 10;`)||[];
+    ap.forEach(x=>(x.platforms||[]).forEach(p=>{if(p&&p.id)pmap[p.id]=p;}));}
+  det.allPlatforms=Object.values(pmap);   // union of this game + its re-releases + its original, for the tracking console picker
   CUR={id,det}; if(layer)layer._cur=CUR;   // remember this sheet's game context so a parent sheet (e.g. a collection) can restore + refresh on close
   const ttbSec=ttb[0]&&(ttb[0].normally||ttb[0].completely||ttb[0].hastily);
   const lib=LIB.games.find(g=>g.igdbId===id);
