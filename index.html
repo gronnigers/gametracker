@@ -392,6 +392,29 @@
   .dtile:active{transform:scale(.97)} .dtile:hover{border-color:#34343c}
   .dtile img{max-height:64px;max-width:86%;object-fit:contain;display:block}
   @media(min-width:768px){.dgrid{grid-template-columns:repeat(3,1fr);gap:16px} .dtile img{max-height:74px}}
+  /* collection roster + sealed */
+  .cring{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+  .cring i{width:41px;height:41px;border-radius:50%;background:var(--bg,#000);display:grid;place-items:center;font-size:11.5px;font-weight:900;color:var(--txt,#f4f4f6);font-style:normal}
+  .collhdr{display:flex;align-items:center;gap:14px;margin:2px 0 13px}
+  .collmeta{display:flex;flex-direction:column;gap:2px}
+  .collmeta b{font-size:14px}.collmeta span{font-size:11.5px;color:var(--dim2,#777)}
+  .croster{display:flex;flex-direction:column;gap:8px}
+  .crow{display:flex;align-items:center;gap:11px;background:var(--panel2,#111114);border:1px solid var(--line,#1e1e22);border-left:3px solid var(--line2,#2a2a30);border-radius:10px;padding:8px 11px;cursor:pointer}
+  .crow.done{border-left-color:var(--good,#39d98a)}
+  .crow.own{border-left-color:var(--acc,#7c5cff)}
+  .crow .ccov{width:34px;height:45px;border-radius:5px;overflow:hidden;background:linear-gradient(160deg,#222,#111);flex:0 0 auto}
+  .crow .ccov img{width:100%;height:100%;object-fit:cover;display:block}
+  .crow .cnm{flex:1;font-size:13px;font-weight:700;line-height:1.2}
+  .crow .cyr{display:block;font-size:10.5px;color:var(--dim2,#777);font-weight:600;margin-top:2px}
+  .cst{border-radius:20px;padding:4px 10px;font-size:11px;font-weight:800;white-space:nowrap;border:1px solid var(--line2,#2a2a30)}
+  .cst.done{background:rgba(57,217,138,.14);color:var(--good,#39d98a);border-color:rgba(57,217,138,.4)}
+  .cst.own{background:rgba(124,92,255,.14);color:#b9a8ff;border-color:rgba(124,92,255,.4)}
+  .cst.add{background:var(--acc,#7c5cff);color:#fff;border-color:var(--acc,#7c5cff);cursor:pointer}
+  .co .seal{position:absolute;left:6px;top:6px;z-index:2;font-size:11px;background:rgba(0,0,0,.82);border:1px solid var(--amber,#f2b661);border-radius:6px;padding:1px 5px;line-height:1.35}
+  .co .colltag{position:absolute;left:6px;bottom:6px;z-index:2;font-size:11px;background:rgba(0,0,0,.82);border:1px solid var(--acc,#7c5cff);border-radius:6px;padding:1px 5px;line-height:1.35}
+  .npbtn.seal.on{background:rgba(242,182,97,.16);border-color:var(--amber,#f2b661);color:var(--amber,#f2b661)}
+  .sealchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2,#2a2a30);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--dim,#aaa);cursor:pointer}
+  .sealchip.sel{background:rgba(242,182,97,.16);border-color:var(--amber,#f2b661);color:var(--amber,#f2b661)}
 </style>
 </head>
 <body>
@@ -427,7 +450,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.4</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.6</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -522,7 +545,7 @@ function gameFromDet(det,shelf){
     genres:(det.genres||[]).map(g=>g.name),
     gameType:det.game_type,
     publisher:(det.involved_companies||[]).filter(c=>c.publisher&&c.company).map(c=>c.company.name)[0]||null,
-    shelf,backlog:false,completed:false,nowPlaying:false,consoles:[],formats:{},myRating:null,hoursPlayed:null,completedDate:null,price:null,notes:"",addedDate:new Date().toISOString().slice(0,10)};
+    shelf,backlog:false,completed:false,nowPlaying:false,consoles:[],formats:{},sealed:false,myRating:null,hoursPlayed:null,completedDate:null,price:null,notes:"",addedDate:new Date().toISOString().slice(0,10)};
 }
 function ignUrl(name){return "https://www.ign.com/search?q="+encodeURIComponent(name);}
 function ytUrl(name){return "https://www.youtube.com/results?search_query="+encodeURIComponent((name||"")+" review")+"&sp=CAMSAhAB";}
@@ -630,9 +653,10 @@ async function cacheCover(game){
 }
 
 /* ---------------- helpers ---------------- */
+const isColl=g=>!!g&&(g.gameType===3||g.gameType===13);
 const by=s=>{
   if(s==="completed")return LIB.games.filter(g=>g.completed);
-  if(s==="backlog")return LIB.games.filter(g=>g.shelf==="collection"&&g.backlog&&!g.completed);
+  if(s==="backlog")return LIB.games.filter(g=>g.shelf==="collection"&&g.backlog&&!g.completed&&!isColl(g));
   if(s==="wishlist")return LIB.games.filter(g=>g.shelf==="wishlist");
   return LIB.games.filter(g=>g.shelf==="collection"); // Collection = everything you own
 };
@@ -647,18 +671,20 @@ function libCard(g){
   else if(g.shelf==="wishlist") l2=`<div class="mt">${g.price?'<span style="color:#7ff0a6">'+esc(g.price)+'</span>':consoleList(g).slice(0,2).join(" · ")}</div>`;
   else l2=`<div class="mt">${consoleList(g).slice(0,2).join(" · ")}${g.backlog?' · <span style="color:#8fd0ff">⏳</span>':''}</div>`;
   const done=g.completed?`<span class="tg done">✓</span>`:"";
-  return `<div class="c" onclick="openGame(${g.igdbId})"><div class="co">${done}${g.metascore?`<span class="sc" style="color:${scCol(g.metascore)}">${g.metascore}</span>`:""}${coverImg(g)}</div><div class="nm">${esc(g.name)}</div>${l2}</div>`;
+  const badges=`${g.sealed?'<span class="seal">🔒</span>':""}${isColl(g)?'<span class="colltag">📦</span>':""}`;
+  return `<div class="c" onclick="openGame(${g.igdbId})"><div class="co">${done}${badges}${g.metascore?`<span class="sc" style="color:${scCol(g.metascore)}">${g.metascore}</span>`:""}${coverImg(g)}</div><div class="nm">${esc(g.name)}</div>${l2}</div>`;
 }
 
 /* ---------------- Library view ---------------- */
 function toggleHTML(){const m=libMode[currentShelf]||"grid";
   return `<button data-m="grid" class="${m==='grid'?'on':''}">▦</button><button data-m="table" class="${m==='table'?'on':''}">☰</button>`;}
-function libFilterActive(){return !!(libFilter.console||libFilter.year||libFilter.type||libFilter.pub);}
+function libFilterActive(){return !!(libFilter.console||libFilter.year||libFilter.type||libFilter.pub||libFilter.sealed);}
 function applyFilters(arr){
   if(libFilter.console)arr=arr.filter(g=>(g.consoles||[]).includes(libFilter.console));
   if(libFilter.year)arr=arr.filter(g=>(g.released||"").slice(0,4)===libFilter.year);
   if(libFilter.type)arr=arr.filter(g=>gtLabel(g.gameType)===libFilter.type);
   if(libFilter.pub)arr=arr.filter(g=>(g.publisher||"")===libFilter.pub);
+  if(libFilter.sealed)arr=arr.filter(g=>g.sealed);
   return arr;
 }
 function updateFilterUI(){["mfilter","dfilter"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.toggle("act",libFilterActive());});}
@@ -686,10 +712,13 @@ function openFilters(){
   const types=uniq(all.map(g=>gtLabel(g.gameType)));
   const pubs=uniq(all.map(g=>g.publisher)).sort();
   const sel=(f,lbl,opts)=>!opts.length?"":`<div class="field"><label>${lbl}</label><select onchange="setFilter('${f}',this.value)"><option value="">All ${esc(lbl.toLowerCase())}</option>${opts.map(o=>`<option ${libFilter[f]===String(o)?"selected":""}>${esc(String(o))}</option>`).join("")}</select></div>`;
-  const controls=[sel("console","Console",consoles),sel("year","Year",years),sel("type","Type",types),sel("pub","Publisher",pubs)].filter(Boolean).join("")||`<div class="mt" style="padding:8px 0">No filters available for this shelf yet.</div>`;
+  const sealedN=all.filter(g=>g.sealed).length;
+  const sealedCtl=sealedN?`<div class="field"><label>Condition</label><span class="sealchip${libFilter.sealed?' sel':''}" onclick="toggleSealedFilter(this)">🔒 Sealed only (${sealedN})${libFilter.sealed?' ✓':''}</span></div>`:"";
+  const controls=[sel("console","Console",consoles),sel("year","Year",years),sel("type","Type",types),sel("pub","Publisher",pubs)].filter(Boolean).join("")+sealedCtl||`<div class="mt" style="padding:8px 0">No filters available for this shelf yet.</div>`;
   modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><h2>Filter · ${SHELF_LABEL[currentShelf]}</h2>${controls}<div class="actions"><button class="primary" onclick="closeModal()">Done</button>${libFilterActive()?'<button class="danger" onclick="clearFilters()">Clear</button>':''}</div>`);
 }
 function setFilter(f,val){libFilter[f]=val;renderLibrary();}
+function toggleSealedFilter(el){libFilter.sealed=!libFilter.sealed;if(el){el.classList.toggle("sel",libFilter.sealed);el.innerHTML="🔒 Sealed only"+(libFilter.sealed?" ✓":"");}renderLibrary();}
 function clearFilters(){libFilter={};renderLibrary();closeModal();}
 function wireLibrary(){
   document.getElementById("segs").addEventListener("click",e=>{const b=e.target.closest(".segbtn");if(!b)return;currentShelf=b.dataset.s;libFilter={};renderLibrary();});
@@ -713,7 +742,8 @@ function renderStats(){
   const bars=(rows,max)=>rows.length?rows.slice(0,7).map(([k,n],i)=>`<div class="bar2"><span class="lbl">${esc(k)}</span><div class="track"><div class="fill" style="width:${Math.round(n/max*100)}%;background:${PAL[i%PAL.length]}"></div></div><span class="n">${n}</span></div>`).join(""):`<div class="mt">Add games to see this.</div>`;
   const top=[...rated].sort((a,b)=>b.myRating-a.myRating).slice(0,5);
   const recent=[...done].filter(g=>g.completedDate).sort((a,b)=>b.completedDate.localeCompare(a.completedDate)).slice(0,10);
-  const tiles=[["Owned",owned.length,PAL[0]],["Completed",done.length,PAL[5]],["Backlog",backlog.length,PAL[3]],["Hours",hours,PAL[1]],["Avg ★",avg,PAL[2]],["Wishlist",by('wishlist').length,PAL[4]]];
+  const sealedN=owned.filter(g=>g.sealed).length;
+  const tiles=[["Owned",owned.length,PAL[0]],["Completed",done.length,PAL[5]],["Backlog",backlog.length,PAL[3]],["Hours",hours,PAL[1]],["Avg ★",avg,PAL[2]],["Wishlist",by('wishlist').length,PAL[4]]].concat(sealedN?[["🔒 Sealed",sealedN,PAL[3]]]:[]);
   document.getElementById("statsBody").innerHTML=`
     <div class="statshero">
       <div class="ring big" style="--p:${comp}"><div class="ringin"><b>${comp}%</b><span>done</span></div></div>
@@ -898,7 +928,7 @@ async function renderDiscover(force){
   if(discoverLoaded&&!force)return;
   const now=Math.floor(Date.now()/1000);
   const y3=now-94608000; // ~3 years
-  const TYPES="game_type=(0,8,9,10,11)";
+  const TYPES="game_type=(0,3,8,9,10,11,13)";
   const [trendRaw,upRaw,annRaw]=await Promise.all([
     igdb("games",`fields name,cover.image_id,total_rating,first_release_date,platforms.id; where first_release_date>${y3} & first_release_date<${now} & total_rating_count>12 & cover!=null & ${TYPES}; sort total_rating_count desc; limit 100;`),
     igdb("games",`fields name,cover.image_id,first_release_date,hypes,platforms.name,platforms.id; where first_release_date>${now} & cover!=null & ${TYPES} & (hypes>=15 | (platforms=(130,508) & hypes>=8)); sort first_release_date asc; limit 500;`),
@@ -963,7 +993,7 @@ async function openConsole(id,name){
   }else{
     let off=0,page;const CAP=2500;
     do{
-      page=await igdb("games",`fields name,cover.image_id,total_rating,total_rating_count,first_release_date; where platforms=(${id}) & cover!=null & game_type=(0,8,9,10,11); sort total_rating_count desc; limit 500; offset ${off};`);
+      page=await igdb("games",`fields name,cover.image_id,total_rating,total_rating_count,first_release_date; where platforms=(${id}) & cover!=null & game_type=(0,3,8,9,10,11,13); sort total_rating_count desc; limit 500; offset ${off};`);
       all=all.concat(page);off+=500;
       const el0=document.getElementById("consoleList");
       if(el0&&page.length===500&&off<CAP) el0.innerHTML=`<div class="mt" style="padding:24px 0;text-align:center">Loading… ${all.length} games</div>`;
@@ -1026,7 +1056,7 @@ function openAdd(){
 async function doSearch(){
   const q=document.getElementById("q").value.trim();if(!q)return;
   document.getElementById("results").innerHTML=`<div class="mt">Searching…</div>`;
-  const raw=await igdb("games",`search "${q.replace(/"/g,'')}"; fields name,cover.image_id,first_release_date,total_rating,total_rating_count,platforms.id; where game_type=(0,8,9,10,11) & version_parent=null & cover!=null; limit 50;`);
+  const raw=await igdb("games",`search "${q.replace(/"/g,'')}"; fields name,cover.image_id,first_release_date,total_rating,total_rating_count,platforms.id; where game_type=(0,3,8,9,10,11,13) & version_parent=null & cover!=null; limit 50;`);
   const major=raw.filter(g=>(g.platforms||[]).some(p=>MAJOR.has(p.id)));
   const map={};
   major.forEach(g=>{const k=g.name.toLowerCase().trim();const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
@@ -1102,6 +1132,7 @@ async function togConsole(id,name){const g=ownedGame(id);if(!g||g.shelf!=="colle
 async function togFormat(id,cons,f){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.formats=g.formats||{};const arr=g.formats[cons]||(g.formats[cons]=[]);const i=arr.indexOf(f);i<0?arr.push(f):arr.splice(i,1);await persistTrack(id);}
 async function togBacklog(id){const g=ownedGame(id);if(!g||g.shelf!=="collection"||g.completed)return;g.backlog=!g.backlog;await persistTrack(id);toast(g.backlog?"⏳ Added to backlog":"Removed from backlog");}
 async function togCompleted(id){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.completed=!g.completed;if(g.completed){g.backlog=false;g.nowPlaying=false;if(!g.completedDate)g.completedDate=today();}await persistTrack(id);toast(g.completed?"✅ Completed":"Marked not completed");}
+async function togSealed(id){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.sealed=!g.sealed;await persistTrack(id);toast(g.sealed?"🔒 Marked sealed / new in box":"Opened — no longer sealed");}
 async function setNowPlaying(id){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;const on=!g.nowPlaying;if(on)LIB.games.forEach(x=>x.nowPlaying=false);g.nowPlaying=on;await persistTrack(id);renderHero();toast(on?"🎮 Now playing: "+g.name:"Cleared now playing");}
 
 function trackB(id,det,g){
@@ -1114,6 +1145,8 @@ function trackB(id,det,g){
     return `<span class="tchip${sel?' sel':''}" onclick="togConsole(${id},'${p.replace(/'/g,"\\'")}')">${esc(shortPlat(p))}${sel?' ✓':''}</span>`;
   }).join(""):`<span class="tmini">No platform data</span>`;
   const ownedCons=isCol?(g.consoles||[]):[];
+  const hasPhysical=isCol&&Object.values((g&&g.formats)||{}).some(a=>Array.isArray(a)&&a.includes("physical"));
+  const isCollT=isColl(g)||!!(det&&(det.game_type===3||det.game_type===13));
   const fmtRows=ownedCons.length?ownedCons.map(c=>{
     const arr=(g.formats&&g.formats[c])||[];
     const ce=c.replace(/'/g,"\\'");
@@ -1123,7 +1156,7 @@ function trackB(id,det,g){
     }).join("");
     return `<div class="fmtrow"><span class="fmtlabel">${esc(shortPlat(c))}</span>${chips}</div>`;
   }).join(""):`<span class="tmini">Pick a console above first.</span>`;
-  const statusPills=`<span class="tpill${isCol&&g.backlog?' on':''}" onclick="togBacklog(${id})">⏳ Backlog</span><span class="tpill done${isCol&&g.completed?' on':''}" onclick="togCompleted(${id})">✅ Completed</span>`;
+  const statusPills=`${isCollT?'':`<span class="tpill${isCol&&g.backlog?' on':''}" onclick="togBacklog(${id})">⏳ Backlog</span>`}<span class="tpill done${isCol&&g.completed?' on':''}" onclick="togCompleted(${id})">✅ Completed</span>`;
   const meta="";
   return `<div class="trackcard tb">
     <p class="tlab">SHELF</p>
@@ -1132,7 +1165,8 @@ function trackB(id,det,g){
     <div class="${lock?'tlocked':''}">
       <p class="tlab">CONSOLE${plats.length>1?' — tap all you own':''}</p><div class="tcgrid">${consoleChips}</div>
       <p class="tlab">FORMAT${ownedCons.length>1?' — per console':''}</p><div class="fmtwrap">${fmtRows}</div>
-      <p class="tlab">STATUS</p><div class="tstatus">${statusPills}</div>
+      ${hasPhysical?`<p class="tlab">CONDITION</p><button class="npbtn seal${g.sealed?' on':''}" onclick="togSealed(${id})">${g.sealed?'🔒 Sealed / New in box — tap to open':'🔓 Mark sealed / new in box'}</button>`:""}
+      <p class="tlab">STATUS${isCollT?' — collections skip the backlog':''}</p><div class="tstatus">${statusPills}</div>
       <p class="tlab">🎮 NOW PLAYING</p>
       <button class="npbtn${isCol&&g.nowPlaying?' on':''}" onclick="setNowPlaying(${id})">${isCol&&g.nowPlaying?'🎮 Currently playing — tap to clear':'🎮 Set as Now Playing'}</button>
     </div>
@@ -1153,6 +1187,42 @@ function trackEdit(l){
 }
 function backToTrack(){const g=ownedGame(CUR.id);document.getElementById("trackArea").innerHTML=trackB(CUR.id,CUR.det,g);}
 function editTracking(){document.getElementById("trackArea").innerHTML=trackEdit(LIB.games.find(g=>g.igdbId===CUR.id));}
+const COLL_CACHE={};
+async function loadCollection(id,det){
+  let items=COLL_CACHE[id];
+  if(!items){
+    const r=await igdb("games",`fields id,name,first_release_date,cover.image_id; where bundles=(${id}); sort first_release_date asc; limit 40;`);
+    items=(r||[]).map(x=>({id:x.id,name:x.name,cover:x.cover&&x.cover.image_id,released:x.first_release_date?new Date(x.first_release_date*1000).getFullYear():""}));
+    COLL_CACHE[id]=items;
+  }
+  if(!(CUR&&CUR.id===id))return;
+  renderCollArea(id,items);
+}
+function renderCollArea(id,items){
+  const box=document.getElementById("collArea"); if(!box)return;
+  if(!items.length){box.innerHTML=`<div class="mt" style="color:var(--dim2);font-size:12px">No sub-games listed for this collection in IGDB.</div>`;return;}
+  const played=items.filter(m=>{const o=ownedGame(m.id);return o&&o.completed;}).length;
+  const pct=Math.round(played/items.length*100);
+  const ring=`<div class="cring" style="background:conic-gradient(var(--good) ${pct}%,#22222a 0)"><i>${played}/${items.length}</i></div>`;
+  const rows=items.map(m=>{
+    const o=ownedGame(m.id); let cls,chip;
+    if(o&&o.completed){cls="done";chip='<span class="cst done">✓ Played</span>';}
+    else if(o){cls="own";chip='<span class="cst own">● Owned</span>';}
+    else {cls="add";chip=`<button class="cst add" onclick="event.stopPropagation();trackMember(${m.id})">+ Track</button>`;}
+    const cv=m.cover?`<img loading="lazy" src="${IMG(m.cover)}" onerror="this.style.opacity=0">`:"";
+    return `<div class="crow ${cls}" onclick="openGame(${m.id})"><div class="ccov">${cv}</div><div class="cnm">${esc(m.name)}${m.released?`<span class="cyr">${m.released}</span>`:""}</div>${chip}</div>`;
+  }).join("");
+  box.innerHTML=`<div class="collhdr">${ring}<div class="collmeta"><b>${items.length} games in this collection</b><span>${pct}% played · backlog stays off for the collection</span></div></div><div class="croster">${rows}</div>`;
+}
+async function trackMember(mid){
+  if(ownedGame(mid)){toast("Already in your library");return;}
+  const arr=await igdb("games",DETAIL_FIELDS+` where id=${mid};`);
+  const d=arr[0]; if(!d){toast("Couldn't add that one");return;}
+  const g=gameFromDet(d,"collection"); g.shelf="collection"; LIB.games.push(g);
+  await saveLibrary(); refreshAll(); cacheCover(g).then(()=>queueSave());
+  if(CUR&&COLL_CACHE[CUR.id]) renderCollArea(CUR.id,COLL_CACHE[CUR.id]);
+  toast("📚 Added "+g.name+" to your collection");
+}
 async function openGame(id){
   modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><div style="padding:52px 0;text-align:center;color:var(--dim)">Loading…</div>`);
   const [arr,ttb]=await Promise.all([
@@ -1175,9 +1245,11 @@ async function openGame(id){
     ${scorePills(det,ttbSec)}
     ${genres.length?`<div class="chips">${genres.map(chip).join("")}</div>`:""}
     ${det.summary?`<p class="summary">${esc(det.summary)}</p>`:""}
+    ${(det.game_type===3||det.game_type===13)?`<div class="divider">📦 In the case</div><div id="collArea"><div class="mt" style="padding:6px 0;color:var(--dim2);font-size:12px">Loading collection…</div></div>`:""}
     <div class="divider">Media</div><div id="mediaArea"><div class="mt" style="padding:6px 0 2px;color:var(--dim2);font-size:12px">Loading media…</div></div>
     ${trackArea}`);
   loadMedia(id, det);
+  if(det.game_type===3||det.game_type===13)loadCollection(id,det);
 }
 const MEDIA_CACHE={};
 const MEDIA_V=3;   // bump to invalidate stale media caches (e.g. old view-count reviews)
