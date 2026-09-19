@@ -455,7 +455,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -1095,7 +1095,8 @@ const today=()=>new Date().toISOString().slice(0,10);
 function ownedGame(id){return LIB.games.find(g=>g.igdbId===id);}
 const HIDE_PLATS=new Set(["Family Computer","Family Computer Disk System","Super Famicom"]);
 function platNames(det,g){
-  const tracked=(det&&det.platforms||[]).filter(p=>p.id&&TRACKED_PIDS.has(p.id)).map(p=>p.name);
+  const src=(det&&(det.allPlatforms||det.platforms))||[];   // allPlatforms folds in re-releases/ports so a game shows every console it shipped on
+  const tracked=src.filter(p=>p.id&&TRACKED_PIDS.has(p.id)).map(p=>p.name);
   const owned=(g&&g.consoles)||[];
   return [...new Set([...tracked,...owned])].filter(Boolean);
 }
@@ -1253,11 +1254,18 @@ async function trackMember(mid){
 }
 async function openGame(id){
   const layer=modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><div style="padding:52px 0;text-align:center;color:var(--dim)">Loading…</div>`);
-  const [arr,ttb]=await Promise.all([
+  const [arr,ttb,fam]=await Promise.all([
     igdb("games",DETAIL_FIELDS+` where id=${id};`),
-    igdb("game_time_to_beats",`fields normally,hastily,completely; where game_id=${id};`)
+    igdb("game_time_to_beats",`fields normally,hastily,completely; where game_id=${id};`),
+    // ports / versions / editions of this game — so the console picker shows every platform it shipped on (e.g. Shantae GBC original + Limited Run Switch re-release)
+    igdb("games",`fields platforms.id,platforms.name; where (parent_game=${id} | version_parent=${id}) & platforms!=null; limit 50;`)
   ]);
-  const det=arr[0]||{}; CUR={id,det}; if(layer)layer._cur=CUR;   // remember this sheet's game context so a parent sheet (e.g. a collection) can restore + refresh on close
+  const det=arr[0]||{};
+  const pmap={};
+  (det.platforms||[]).forEach(p=>{if(p&&p.id)pmap[p.id]=p;});
+  (fam||[]).forEach(x=>(x.platforms||[]).forEach(p=>{if(p&&p.id)pmap[p.id]=p;}));
+  det.allPlatforms=Object.values(pmap);   // union of this game + its re-releases, for the tracking console picker
+  CUR={id,det}; if(layer)layer._cur=CUR;   // remember this sheet's game context so a parent sheet (e.g. a collection) can restore + refresh on close
   const ttbSec=ttb[0]&&(ttb[0].normally||ttb[0].completely||ttb[0].hastily);
   const lib=LIB.games.find(g=>g.igdbId===id);
   const shot=det.screenshots&&det.screenshots[0]&&det.screenshots[0].image_id;
