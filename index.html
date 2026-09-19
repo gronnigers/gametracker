@@ -135,6 +135,12 @@
   .stat{border:1px solid var(--line);border-radius:14px;padding:14px 12px}
   .stat .sn{font-size:24px;font-weight:800;line-height:1}
   .stat .sk{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;margin-top:6px}
+  .libsearch{background:var(--card,#141418);border:1px solid var(--line,#26262c);color:#e8e8ef;border-radius:10px;height:34px;padding:0 12px;font-size:13px;outline:none;transition:border-color .12s ease,box-shadow .12s ease}
+  .libsearch::placeholder{color:var(--dim2,#6b6b78)}
+  .libsearch:focus{border-color:#7c5cff;box-shadow:0 0 0 2px rgba(124,92,255,.25)}
+  .libsearch::-webkit-search-cancel-button{-webkit-appearance:none;height:14px;width:14px;background:var(--dim2,#6b6b78);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;cursor:pointer}
+  .mobileHead .libsearch{width:130px;height:32px}
+  .desktopHead .libsearch{width:190px}
   .stat.clk{cursor:pointer;transition:transform .08s ease,border-color .12s ease}
   .stat.clk:hover{transform:translateY(-1px);filter:brightness(1.15)}
   .stat.clk:active{transform:translateY(0)}
@@ -459,7 +465,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.5</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.6</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -478,10 +484,11 @@
     <!-- LIBRARY -->
     <section class="view" data-view="library">
       <div class="topbar mobileHead"><div><div class="tt">Library</div></div><div class="sp"></div>
+        <input id="msearch" class="libsearch" type="search" inputmode="search" placeholder="Search…" oninput="libSearch(this.value)" aria-label="Search library">
         <button class="iconbtn filterbtn" id="mfilter" onclick="openFilters()" aria-label="Filter"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg></button>
         <div class="toggle" id="mtoggle"></div></div>
       <div class="viewhead desktopHead"><div><h1>Library</h1><div class="sub">Your collection, sorted by shelf.</div></div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center"><button class="iconbtn filterbtn" id="dfilter" onclick="openFilters()" aria-label="Filter"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg></button><div class="toggle" id="dtoggle"></div></div></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center"><input id="dsearch" class="libsearch" type="search" inputmode="search" placeholder="Search library…" oninput="libSearch(this.value)" aria-label="Search library"><button class="iconbtn filterbtn" id="dfilter" onclick="openFilters()" aria-label="Filter"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg></button><div class="toggle" id="dtoggle"></div></div></div>
       <div class="segwrap" id="segs"></div>
       <div id="libBody"></div>
     </section>
@@ -690,6 +697,8 @@ function toggleHTML(){const m=libMode[currentShelf]||"grid";
   return `<button data-m="grid" class="${m==='grid'?'on':''}">▦</button><button data-m="table" class="${m==='table'?'on':''}">☰</button>`;}
 function libFilterActive(){return !!(libFilter.console||libFilter.year||libFilter.type||libFilter.pub||libFilter.sealed);}
 function applyFilters(arr){
+  const q=(libFilter.q||"").trim().toLowerCase();
+  if(q)arr=arr.filter(g=>((g.name||"")+" "+consoleList(g).join(" ")+" "+((g.genres||[]).join(" "))+" "+(g.publisher||"")).toLowerCase().includes(q));
   if(libFilter.console)arr=arr.filter(g=>(g.consoles||[]).includes(libFilter.console));
   if(libFilter.year)arr=arr.filter(g=>(g.released||"").slice(0,4)===libFilter.year);
   if(libFilter.type)arr=arr.filter(g=>gtLabel(g.gameType)===libFilter.type);
@@ -697,17 +706,19 @@ function applyFilters(arr){
   if(libFilter.sealed)arr=arr.filter(g=>g.sealed);
   return arr;
 }
+function libSearch(v){libFilter.q=v;renderLibrary();}   // live keyword filter over the current shelf
 function updateFilterUI(){["mfilter","dfilter"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.toggle("act",libFilterActive());});}
 function renderLibrary(){
   document.getElementById("segs").innerHTML=SEGMENTS.map(s=>
     `<button class="segbtn ${s===currentShelf?'on':''}" data-s="${s}"><span>${SHELF_LABEL[s]}</span><span class="segct">${by(s).length}</span></button>`).join("");
   document.getElementById("mtoggle").innerHTML=toggleHTML();
   document.getElementById("dtoggle").innerHTML=toggleHTML();
+  ["msearch","dsearch"].forEach(id=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=libFilter.q||"";});  // sync search box to state without stealing focus mid-type
   const all=by(currentShelf);const mode=libMode[currentShelf]||"grid";
   const arr=applyFilters(all.slice()).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   let body;
   if(!all.length) body=`<div class="empty">Nothing in ${SHELF_LABEL[currentShelf]} yet.<br>Tap <b>Add</b> to find a game.</div>`;
-  else if(!arr.length) body=`<div class="empty">No games match these filters.<br><a onclick="clearFilters()" style="color:#7fb0ff;cursor:pointer">Clear filters</a></div>`;
+  else if(!arr.length) body=`<div class="empty">No games match${libFilter.q?` "${esc(libFilter.q)}"`:" these filters"}.<br><a onclick="clearFilters()" style="color:#7fb0ff;cursor:pointer">Clear ${libFilter.q?'search':'filters'}</a></div>`;
   else if(mode==="grid") body=`<div class="grid">${arr.map(libCard).join("")}</div>`;
   else body=`<div class="tblwrap"><table><thead><tr><th></th><th>Title</th><th>Meta</th><th>My</th><th>Hours</th><th>Price</th></tr></thead><tbody>${
     arr.map(g=>`<tr onclick="openGame(${g.igdbId})"><td>${coverImg(g)}</td><td><b>${esc(g.name)}</b><div style="font-size:11px;color:var(--dim2)">${consoleList(g).join(" · ")}</div></td><td class="num">${g.metascore??"—"}</td><td class="num">${g.myRating??"—"}</td><td class="num">${g.hoursPlayed?g.hoursPlayed+"h":"—"}</td><td class="num">${esc(g.price||"")}</td></tr>`).join("")}</tbody></table></div>`;
@@ -732,7 +743,7 @@ function toggleSealedFilter(el){libFilter.sealed=!libFilter.sealed;if(el){el.cla
 function clearFilters(){libFilter={};renderLibrary();closeModal();}
 function kpiGo(shelf,sealed){currentShelf=shelf;libFilter=sealed?{sealed:true}:{};switchView("library");renderLibrary();}   // stat tile → jump to that Library list
 function wireLibrary(){
-  document.getElementById("segs").addEventListener("click",e=>{const b=e.target.closest(".segbtn");if(!b)return;currentShelf=b.dataset.s;libFilter={};renderLibrary();});
+  document.getElementById("segs").addEventListener("click",e=>{const b=e.target.closest(".segbtn");if(!b)return;currentShelf=b.dataset.s;libFilter=libFilter.q?{q:libFilter.q}:{};renderLibrary();});   // keep the active search when switching shelves
   ["mtoggle","dtoggle"].forEach(id=>document.getElementById(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;libMode[currentShelf]=b.dataset.m;renderLibrary();}));
   const lb=document.getElementById("libBody");
   lb.addEventListener("change",e=>{const s=e.target.closest("select[data-f]");if(!s)return;libFilter[s.dataset.f]=s.value;renderLibrary();});
