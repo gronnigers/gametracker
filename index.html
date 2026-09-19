@@ -465,7 +465,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.6</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.7</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -1319,7 +1319,7 @@ async function openGame(id){
   if(det.game_type===3||det.game_type===13)loadCollection(id,det);
 }
 const MEDIA_CACHE={};
-const MEDIA_V=3;   // bump to invalidate stale media caches (e.g. old view-count reviews)
+const MEDIA_V=4;   // bump to invalidate stale media caches (v4: re-fetch games that cached empty reviews when the YouTube quota was spent)
 const TRUSTED=["ign","gamespot","digital foundry","acg","skill up","noclip","easy allies","eurogamer","gameranx","gmanlives","nintendo life","gamesradar","pc gamer","push square","fextralife","the escapist","gamingbolt"];
 function isTrusted(ch){const t=(ch||"").toLowerCase().trim();return TRUSTED.some(n=>t===n||t.startsWith(n)||t.includes(" "+n));}
 const YTW=id=>"https://www.youtube.com/watch?v="+id;
@@ -1357,7 +1357,11 @@ async function loadMedia(id,det){
     const retros=(rt&&rt.items)?rt.items:[];
     media={v:MEDIA_V,trailers,reviews,retros};
     MEDIA_CACHE[id]=media;
-    if(g){g.media=media;queueSave();}
+    // Only PERSIST when YouTube actually returned videos. If reviews+retros are both empty it's almost always a
+    // transient miss (daily YouTube quota spent / API hiccup), not a real "no reviews" — persisting it would freeze
+    // the game on trailers-only forever. Leave it unsaved so it refetches next time; keep it session-cached to avoid spam.
+    const gotYT=reviews.length||retros.length;
+    if(g&&gotYT){g.media=media;queueSave();}
   }
   if(!(CUR&&CUR.id===id))return;
   // point the "Top review" link at the #1 review
