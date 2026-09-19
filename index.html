@@ -455,7 +455,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -1210,8 +1210,13 @@ async function loadCollection(id,det){
     // a port(11)/version points at its source; remakes(8) keep their own identity
     const parentOf=m=>(m&&(m.version_parent||m.game_type===11))?(m.parent_game||m.version_parent):null;
     const fetchId=async pid=>{ if(cache[pid])return cache[pid]; const pr=await igdb("games",`${FLDS}; where id=(${pid}); limit 1;`)||[]; if(pr[0])cache[pid]=pr[0]; return pr[0]; };
+    // only a MODERN re-release entry (e.g. a 2020/2024 Switch port that hides the classic) gets resolved back to its original;
+    // a classic-era member already IS the game to show, so we never resolve it up to a regional variant
+    // (that would turn NA "Castlevania III: Dracula's Curse" into the JP "Akumajou Densetsu" and collapse the two)
+    const yearOf=t=>{const d=t&&t.first_release_date;return d?new Date(d*1000).getFullYear():0;};
+    const isModern=t=>yearOf(t)>=2015;
     // walk the whole port chain to the real original (IGDB can nest ports 2+ deep, e.g. Switch port -> Shindou port -> Super Mario 64)
-    const originalOf=async m=>{ let cur=m; for(let h=0;h<6;h++){ const pid=parentOf(cur); if(!pid)break; const par=await fetchId(pid); if(!par)break; cur=par; } return cur; };
+    const originalOf=async m=>{ if(!isModern(m))return m; let cur=m; for(let h=0;h<6;h++){ const pid=parentOf(cur); if(!pid)break; const par=await fetchId(pid); if(!par)break; cur=par; } return cur; };
     const seen={}; items=[];
     for(const m of members){
       const src=await originalOf(m);   // prefer the ORIGINAL game
