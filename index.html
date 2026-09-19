@@ -450,7 +450,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.6</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.7</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -884,7 +884,8 @@ function shortPlat(name){
   const M={"Nintendo Entertainment System":"NES","Super Nintendo Entertainment System":"SNES","Nintendo Switch 2":"Switch 2","Nintendo Switch":"Switch","Nintendo 3DS":"3DS","New Nintendo 3DS":"3DS",
     "Wii U":"Wii U","Wii":"Wii","PlayStation 5":"PS5","PlayStation 4":"PS4","PlayStation 3":"PS3",
     "PlayStation VR2":"PSVR2","Xbox Series X|S":"Xbox X|S","Xbox One":"Xbox One",
-    "PC (Microsoft Windows)":"PC","Mac":"Mac","Linux":"Linux","Google Stadia":"Stadia","iOS":"iOS","Android":"Android"};
+    "PC (Microsoft Windows)":"PC","Mac":"Mac","Linux":"Linux","Google Stadia":"Stadia","iOS":"iOS","Android":"Android",
+    "Nintendo DS":"DS","Nintendo 64":"N64","Nintendo GameCube":"GameCube","Game Boy Advance":"GBA","Game Boy Color":"GB Color","Game Boy":"Game Boy","Sega Genesis/Mega Drive":"Genesis","Sega Mega Drive/Genesis":"Genesis","Sega Master System/Mark III":"Master System","Dreamcast":"Dreamcast","PlayStation 2":"PS2","PlayStation":"PS1","PlayStation Portable":"PSP","PlayStation Vita":"Vita","Xbox 360":"Xbox 360","Xbox":"Xbox"};
   return M[name]||name;
 }
 function platLine(g){
@@ -1191,8 +1192,23 @@ const COLL_CACHE={};
 async function loadCollection(id,det){
   let items=COLL_CACHE[id];
   if(!items){
-    const r=await igdb("games",`fields id,name,first_release_date,cover.image_id; where bundles=(${id}); sort first_release_date asc; limit 40;`);
-    items=(r||[]).map(x=>({id:x.id,name:x.name,cover:x.cover&&x.cover.image_id,released:x.first_release_date?new Date(x.first_release_date*1000).getFullYear():""}));
+    const members=await igdb("games",`fields id,name,first_release_date,cover.image_id,parent_game,version_parent,game_type,platforms.name; where bundles=(${id}); limit 60;`)||[];
+    const parentOf=m=>(m.version_parent||m.game_type===11)?(m.parent_game||m.version_parent):null;  // resolve ports/versions to the original; keep remakes as-is
+    const pids=[...new Set(members.map(parentOf).filter(Boolean))];
+    const parents={};
+    if(pids.length){
+      const pr=await igdb("games",`fields id,name,first_release_date,cover.image_id,platforms.name; where id=(${pids.join(",")}); limit 60;`)||[];
+      pr.forEach(x=>parents[x.id]=x);
+    }
+    const seen={}; items=[];
+    members.forEach(m=>{
+      const par=parentOf(m); const src=(par&&parents[par])||m;   // prefer the ORIGINAL game
+      if(seen[src.id])return; seen[src.id]=1;
+      items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
+        released:src.first_release_date?new Date(src.first_release_date*1000).getFullYear():"",
+        plats:(src.platforms||[]).map(x=>x.name)});
+    });
+    items.sort((a,b)=>(a.released||9999)-(b.released||9999));
     COLL_CACHE[id]=items;
   }
   if(!(CUR&&CUR.id===id))return;
@@ -1210,7 +1226,8 @@ function renderCollArea(id,items){
     else if(o){cls="own";chip='<span class="cst own">● Owned</span>';}
     else {cls="add";chip=`<button class="cst add" onclick="event.stopPropagation();trackMember(${m.id})">+ Track</button>`;}
     const cv=m.cover?`<img loading="lazy" src="${IMG(m.cover)}" onerror="this.style.opacity=0">`:"";
-    return `<div class="crow ${cls}" onclick="openGame(${m.id})"><div class="ccov">${cv}</div><div class="cnm">${esc(m.name)}${m.released?`<span class="cyr">${m.released}</span>`:""}</div>${chip}</div>`;
+    const sub=[(m.plats||[]).map(shortPlat).slice(0,2).join(" · "),m.released].filter(Boolean).join(" · ");
+    return `<div class="crow ${cls}" onclick="openGame(${m.id})"><div class="ccov">${cv}</div><div class="cnm">${esc(m.name)}${sub?`<span class="cyr">${esc(sub)}</span>`:""}</div>${chip}</div>`;
   }).join("");
   box.innerHTML=`<div class="collhdr">${ring}<div class="collmeta"><b>${items.length} games in this collection</b><span>${pct}% played · backlog stays off for the collection</span></div></div><div class="croster">${rows}</div>`;
 }
