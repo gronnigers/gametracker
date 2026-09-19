@@ -455,7 +455,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -1203,22 +1203,22 @@ const COLL_CACHE={};
 async function loadCollection(id,det){
   let items=COLL_CACHE[id];
   if(!items){
-    const members=await igdb("games",`fields id,name,first_release_date,cover.image_id,parent_game,version_parent,game_type,platforms.name; where bundles=(${id}); limit 60;`)||[];
-    const parentOf=m=>(m.version_parent||m.game_type===11)?(m.parent_game||m.version_parent):null;  // resolve ports/versions to the original; keep remakes as-is
-    const pids=[...new Set(members.map(parentOf).filter(Boolean))];
-    const parents={};
-    if(pids.length){
-      const pr=await igdb("games",`fields id,name,first_release_date,cover.image_id,platforms.name; where id=(${pids.join(",")}); limit 60;`)||[];
-      pr.forEach(x=>parents[x.id]=x);
-    }
+    const FLDS="fields id,name,first_release_date,cover.image_id,parent_game,version_parent,game_type,platforms.name";
+    const members=await igdb("games",`${FLDS}; where bundles=(${id}); limit 60;`)||[];
+    const cache={}; members.forEach(m=>cache[m.id]=m);
+    // a port(11)/version points at its source; remakes(8) keep their own identity
+    const parentOf=m=>(m&&(m.version_parent||m.game_type===11))?(m.parent_game||m.version_parent):null;
+    const fetchId=async pid=>{ if(cache[pid])return cache[pid]; const pr=await igdb("games",`${FLDS}; where id=(${pid}); limit 1;`)||[]; if(pr[0])cache[pid]=pr[0]; return pr[0]; };
+    // walk the whole port chain to the real original (IGDB can nest ports 2+ deep, e.g. Switch port -> Shindou port -> Super Mario 64)
+    const originalOf=async m=>{ let cur=m; for(let h=0;h<6;h++){ const pid=parentOf(cur); if(!pid)break; const par=await fetchId(pid); if(!par)break; cur=par; } return cur; };
     const seen={}; items=[];
-    members.forEach(m=>{
-      const par=parentOf(m); const src=(par&&parents[par])||m;   // prefer the ORIGINAL game
-      if(seen[src.id])return; seen[src.id]=1;
+    for(const m of members){
+      const src=await originalOf(m);   // prefer the ORIGINAL game
+      if(seen[src.id])continue; seen[src.id]=1;
       items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
         released:src.first_release_date?new Date(src.first_release_date*1000).getFullYear():"",
         plats:(src.platforms||[]).map(x=>x.name)});
-    });
+    }
     items.sort((a,b)=>(a.released||9999)-(b.released||9999));
     COLL_CACHE[id]=items;
   }
