@@ -412,6 +412,11 @@
   .cst.add{background:var(--acc,#7c5cff);color:#fff;border-color:var(--acc,#7c5cff);cursor:pointer}
   .co .seal{position:absolute;left:6px;top:6px;z-index:2;font-size:11px;background:rgba(0,0,0,.82);border:1px solid var(--amber,#f2b661);border-radius:6px;padding:1px 5px;line-height:1.35}
   .co .colltag{position:absolute;left:6px;bottom:6px;z-index:2;font-size:11px;background:rgba(0,0,0,.82);border:1px solid var(--acc,#7c5cff);border-radius:6px;padding:1px 5px;line-height:1.35}
+  .co .dupe{position:absolute;right:6px;bottom:6px;z-index:2;font-size:11px;font-weight:700;background:rgba(0,0,0,.82);border:1px solid #6fd0a6;color:#8ff0c2;border-radius:6px;padding:1px 5px;line-height:1.35}
+  .copystep{display:inline-flex;align-items:center;gap:6px;margin-left:4px;font-size:12px;color:var(--dim)}
+  .copystep button{width:22px;height:22px;border-radius:6px;border:1px solid #2c2c34;background:#17171c;color:#cfcfe0;font-size:14px;line-height:1;cursor:pointer;padding:0}
+  .copystep button:disabled{opacity:.35;cursor:default}
+  .copystep i{font-style:normal;min-width:58px;text-align:center;color:#cfcfe0}
   .npbtn.seal.on{background:rgba(242,182,97,.16);border-color:var(--amber,#f2b661);color:var(--amber,#f2b661)}
   .sealchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2,#2a2a30);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--dim,#aaa);cursor:pointer}
   .sealchip.sel{background:rgba(242,182,97,.16);border-color:var(--amber,#f2b661);color:var(--amber,#f2b661)}
@@ -450,7 +455,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.8</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -671,7 +676,8 @@ function libCard(g){
   else if(g.shelf==="wishlist") l2=`<div class="mt">${g.price?'<span style="color:#7ff0a6">'+esc(g.price)+'</span>':consoleList(g).slice(0,2).join(" · ")}</div>`;
   else l2=`<div class="mt">${consoleList(g).slice(0,2).join(" · ")}${g.backlog?' · <span style="color:#8fd0ff">⏳</span>':''}</div>`;
   const done=g.completed?`<span class="tg done">✓</span>`:"";
-  const badges=`${g.sealed?'<span class="seal">🔒</span>':""}${isColl(g)?'<span class="colltag">📦</span>':""}`;
+  const dup=g.copies?Math.max(1,...Object.values(g.copies)):1;
+  const badges=`${g.sealed?'<span class="seal">🔒</span>':""}${isColl(g)?'<span class="colltag">📦</span>':""}${dup>1?`<span class="dupe">×${dup}</span>`:""}`;
   return `<div class="c" onclick="openGame(${g.igdbId})"><div class="co">${done}${badges}${g.metascore?`<span class="sc" style="color:${scCol(g.metascore)}">${g.metascore}</span>`:""}${coverImg(g)}</div><div class="nm">${esc(g.name)}</div>${l2}</div>`;
 }
 
@@ -743,7 +749,8 @@ function renderStats(){
   const top=[...rated].sort((a,b)=>b.myRating-a.myRating).slice(0,5);
   const recent=[...done].filter(g=>g.completedDate).sort((a,b)=>b.completedDate.localeCompare(a.completedDate)).slice(0,10);
   const sealedN=owned.filter(g=>g.sealed).length;
-  const tiles=[["Owned",owned.length,PAL[0]],["Completed",done.length,PAL[5]],["Backlog",backlog.length,PAL[3]],["Hours",hours,PAL[1]],["Avg ★",avg,PAL[2]],["Wishlist",by('wishlist').length,PAL[4]]].concat(sealedN?[["🔒 Sealed",sealedN,PAL[3]]]:[]);
+  const physCopies=owned.reduce((a,g)=>{let s=0;Object.entries(g.formats||{}).forEach(([c,arr])=>{if(Array.isArray(arr)&&arr.includes("physical"))s+=copiesOf(g,c);});return a+s;},0);
+  const tiles=[["Owned",owned.length,PAL[0]],["Completed",done.length,PAL[5]],["Backlog",backlog.length,PAL[3]],["Hours",hours,PAL[1]],["Avg ★",avg,PAL[2]],["Wishlist",by('wishlist').length,PAL[4]]].concat(physCopies?[["💿 Physical",physCopies,PAL[1]]]:[]).concat(sealedN?[["🔒 Sealed",sealedN,PAL[3]]]:[]);
   document.getElementById("statsBody").innerHTML=`
     <div class="statshero">
       <div class="ring big" style="--p:${comp}"><div class="ringin"><b>${comp}%</b><span>done</span></div></div>
@@ -1093,7 +1100,7 @@ function platNames(det,g){
   return [...new Set([...tracked,...owned])].filter(Boolean);
 }
 function applyShelf(g,shelf){
-  if(shelf==="wishlist"){g.shelf="wishlist";g.backlog=false;g.completed=false;g.nowPlaying=false;g.consoles=[];g.formats={};}
+  if(shelf==="wishlist"){g.shelf="wishlist";g.backlog=false;g.completed=false;g.nowPlaying=false;g.consoles=[];g.formats={};delete g.copies;}
   else g.shelf="collection";
 }
 async function persistTrack(id){
@@ -1129,8 +1136,10 @@ async function doRemove(id){
   closeModal();  // pop the game detail
   toast("Removed from library");
 }
-async function togConsole(id,name){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.consoles=g.consoles||[];g.formats=g.formats||{};const i=g.consoles.indexOf(name);if(i<0){g.consoles.push(name);if(!g.formats[name])g.formats[name]=[];}else{g.consoles.splice(i,1);delete g.formats[name];}await persistTrack(id);}
-async function togFormat(id,cons,f){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.formats=g.formats||{};const arr=g.formats[cons]||(g.formats[cons]=[]);const i=arr.indexOf(f);i<0?arr.push(f):arr.splice(i,1);await persistTrack(id);}
+async function togConsole(id,name){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.consoles=g.consoles||[];g.formats=g.formats||{};const i=g.consoles.indexOf(name);if(i<0){g.consoles.push(name);if(!g.formats[name])g.formats[name]=[];}else{g.consoles.splice(i,1);delete g.formats[name];if(g.copies)delete g.copies[name];}await persistTrack(id);}
+async function togFormat(id,cons,f){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.formats=g.formats||{};const arr=g.formats[cons]||(g.formats[cons]=[]);const i=arr.indexOf(f);i<0?arr.push(f):arr.splice(i,1);if(f==="physical"&&!arr.includes("physical")&&g.copies)delete g.copies[cons];await persistTrack(id);}
+function copiesOf(g,c){return Math.max(1,(g&&g.copies&&g.copies[c])||1);}   // physical copies on a console; absent = 1
+async function chgCopies(id,cons,d){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.copies=g.copies||{};let n=Math.max(1,copiesOf(g,cons)+d);if(n<=1)delete g.copies[cons];else g.copies[cons]=n;if(g.copies&&!Object.keys(g.copies).length)delete g.copies;await persistTrack(id);}
 async function togBacklog(id){const g=ownedGame(id);if(!g||g.shelf!=="collection"||g.completed)return;g.backlog=!g.backlog;await persistTrack(id);toast(g.backlog?"⏳ Added to backlog":"Removed from backlog");}
 async function togCompleted(id){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.completed=!g.completed;if(g.completed){g.backlog=false;g.nowPlaying=false;if(!g.completedDate)g.completedDate=today();}await persistTrack(id);toast(g.completed?"✅ Completed":"Marked not completed");}
 async function togSealed(id){const g=ownedGame(id);if(!g||g.shelf!=="collection")return;g.sealed=!g.sealed;await persistTrack(id);toast(g.sealed?"🔒 Marked sealed / new in box":"Opened — no longer sealed");}
@@ -1155,7 +1164,9 @@ function trackB(id,det,g){
       const sel=arr.includes(f);
       return `<span class="tchip fmt sm${sel?' sel':''}" onclick="togFormat(${id},'${ce}','${f}')">${FMT_LABEL[f]}${sel?' ✓':''}</span>`;
     }).join("");
-    return `<div class="fmtrow"><span class="fmtlabel">${esc(shortPlat(c))}</span>${chips}</div>`;
+    const n=copiesOf(g,c);
+    const step=arr.includes("physical")?`<span class="copystep" title="Physical copies you own"><button onclick="chgCopies(${id},'${ce}',-1)"${n<=1?' disabled':''}>−</button><i>${n}× copies</i><button onclick="chgCopies(${id},'${ce}',1)">+</button></span>`:"";
+    return `<div class="fmtrow"><span class="fmtlabel">${esc(shortPlat(c))}</span>${chips}${step}</div>`;
   }).join(""):`<span class="tmini">Pick a console above first.</span>`;
   const statusPills=`${isCollT?'':`<span class="tpill${isCol&&g.backlog?' on':''}" onclick="togBacklog(${id})">⏳ Backlog</span>`}<span class="tpill done${isCol&&g.completed?' on':''}" onclick="togCompleted(${id})">✅ Completed</span>`;
   const meta="";
@@ -1241,12 +1252,12 @@ async function trackMember(mid){
   toast("📚 Added "+g.name+" to your collection");
 }
 async function openGame(id){
-  modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><div style="padding:52px 0;text-align:center;color:var(--dim)">Loading…</div>`);
+  const layer=modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><div style="padding:52px 0;text-align:center;color:var(--dim)">Loading…</div>`);
   const [arr,ttb]=await Promise.all([
     igdb("games",DETAIL_FIELDS+` where id=${id};`),
     igdb("game_time_to_beats",`fields normally,hastily,completely; where game_id=${id};`)
   ]);
-  const det=arr[0]||{}; CUR={id,det};
+  const det=arr[0]||{}; CUR={id,det}; if(layer)layer._cur=CUR;   // remember this sheet's game context so a parent sheet (e.g. a collection) can restore + refresh on close
   const ttbSec=ttb[0]&&(ttb[0].normally||ttb[0].completely||ttb[0].hastily);
   const lib=LIB.games.find(g=>g.igdbId===id);
   const shot=det.screenshots&&det.screenshots[0]&&det.screenshots[0].image_id;
@@ -1417,7 +1428,12 @@ function mEl(id){const r=document.getElementById("modalRoot");const top=r&&r.las
 function closeModal(){
   const root=document.getElementById("modalRoot");
   if(root.lastElementChild) root.removeChild(root.lastElementChild);
-  if(!root.lastElementChild) document.body.style.overflow="";
+  if(!root.lastElementChild){ document.body.style.overflow=""; return; }
+  const top=root.lastElementChild;
+  if(top._cur){                                   // a game sheet is now on top again — restore its context
+    CUR=top._cur;
+    if(top.querySelector("#collArea")&&COLL_CACHE[CUR.id]) renderCollArea(CUR.id,COLL_CACHE[CUR.id]);  // refresh roster (a member may have just been tracked)
+  }
 }
 let toastT=null;
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),1700);}
