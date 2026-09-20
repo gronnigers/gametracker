@@ -128,6 +128,25 @@
   .sw-fold .flap{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.62),rgba(205,225,255,.32) 42%,rgba(150,180,220,.12) 70%,transparent);clip-path:polygon(0 0,82% 0,0 82%);filter:drop-shadow(1px 1px 1px rgba(0,0,0,.35))}
   .sw-fold .crease{position:absolute;inset:0;background:linear-gradient(135deg,transparent 46%,rgba(255,255,255,.85) 49%,transparent 52%)}
   .sw-tag{position:absolute;left:6px;bottom:6px;z-index:8;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-weight:800;letter-spacing:.4px;padding:3px 6px;border-radius:6px}
+  /* List view — comfortable rows + rich chips/score */
+  .listwrap{display:flex;flex-direction:column}
+  .lrow2{display:flex;align-items:center;gap:15px;padding:11px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:10px}
+  .lrow2:hover{background:var(--panel)}
+  .lcv{flex:0 0 auto;width:58px;height:87px;border-radius:8px;overflow:hidden;background:linear-gradient(160deg,#222,#111);border:1px solid var(--line)}
+  .lcv img{width:100%;height:100%;object-fit:cover;display:block}
+  .lbody{flex:1;min-width:0}
+  .lnm{font-size:15.5px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lsub{font-size:12px;color:var(--dim);margin-top:2px}
+  .lchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .lchip{display:inline-flex;align-items:center;gap:4px;background:var(--panel2,#1c1c22);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;color:var(--dim)}
+  .lchip.done{color:var(--good);border-color:rgba(53,196,106,.4)}
+  .lchip.back{color:#8fd0ff;border-color:rgba(143,208,255,.35)}
+  .lchip.seal{color:#dfe6ff;border-color:rgba(200,215,255,.35)}
+  .lright{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:8px}
+  .lsc{min-width:36px;text-align:center;font-size:13px;font-weight:800;border:2px solid var(--line);border-radius:20px;padding:3px 9px}
+  .lsc.none{color:var(--dim);border-color:var(--line)}
+  .lstars{color:#f2d675;font-size:12px;letter-spacing:1px}
+  @media(min-width:768px){ .lcv{width:64px;height:96px} .lnm{font-size:16px} .lrow2{gap:18px;padding:12px 10px} }
   .railscroll{position:relative}
   .railnav{display:none}
   @media (hover:hover) and (pointer:fine){
@@ -507,7 +526,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.5</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.6</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -762,6 +781,31 @@ function libCard(g){
   return `<div class="c${wsClass}" onclick="openGame(${g.igdbId})"><div class="co">${done}${badges}${g.metascore?`<span class="sc" style="color:${scCol(g.metascore)}">${g.metascore}</span>`:""}${coverImg(g)}${wtag}${sw}</div><div class="nm">${esc(g.name)}</div>${l2}</div>`;
 }
 
+// List view = comfortable rows (Option 1) + rich chips & score (Option 2)
+function listRow(g){
+  const uniq=[...new Set(consoleList(g).map(c=>shortPlat(c)).filter(Boolean))];
+  const platStr=uniq.slice(0,3).join(" · ")+(uniq.length>3?" +"+(uniq.length-3):"");
+  const genre=(g.genres||[])[0]||"";
+  const sub=[(g.released||"").slice(0,4),g.publisher].filter(Boolean).join(" · ");
+  const chips=[];
+  if(platStr)chips.push(`<span class="lchip">${esc(platStr)}</span>`);
+  if(genre)chips.push(`<span class="lchip">${esc(genre)}</span>`);
+  if(g.shelf==="wishlist"){
+    const ts=g.first_release_date?g.first_release_date:(g.released?Math.floor(new Date(g.released).getTime()/1000):null);
+    if(ts){if(ts*1000>Date.now()){const d=daysUntil(ts);chips.push(`<span class="lchip back">◷ in ${d}d</span>`);}else chips.push(`<span class="lchip done">OUT NOW</span>`);}
+  }else{
+    if(g.completed)chips.push(`<span class="lchip done">✓ Completed</span>`);
+    else if(g.backlog)chips.push(`<span class="lchip back">⏳ Backlog</span>`);
+  }
+  if(g.sealed)chips.push(`<span class="lchip seal">◪ Sealed</span>`);
+  const dup=g.copies?Math.max(1,...Object.values(g.copies)):1; if(dup>1)chips.push(`<span class="lchip">×${dup}</span>`);
+  const score=g.metascore?`<div class="lsc" style="border-color:${scCol(g.metascore)};color:${scCol(g.metascore)}">${g.metascore}</div>`:`<div class="lsc none">—</div>`;
+  const stars=(g.completed&&g.myRating)?`<div class="lstars">${"★".repeat(Math.round(g.myRating/2))}</div>`:"";
+  return `<div class="lrow2" onclick="openGame(${g.igdbId})">
+    <div class="lcv">${coverImg(g)}</div>
+    <div class="lbody"><div class="lnm">${esc(g.name)}</div>${sub?`<div class="lsub">${esc(sub)}</div>`:""}<div class="lchips">${chips.join("")}</div></div>
+    <div class="lright">${score}${stars}</div></div>`;
+}
 /* ---------------- Library view ---------------- */
 function toggleHTML(){const m=libMode[currentShelf]||"grid";
   return `<button data-m="grid" class="${m==='grid'?'on':''}">▦</button><button data-m="table" class="${m==='table'?'on':''}">☰</button>`;}
@@ -827,8 +871,7 @@ function renderLibrary(){
   if(!all.length) body=`<div class="empty">Nothing in ${SHELF_LABEL[currentShelf]} yet.<br>Tap <b>Add</b> to find a game.</div>`;
   else if(!arr.length) body=`<div class="empty">No games match${libFilter.q?` "${esc(libFilter.q)}"`:" these filters"}.<br><a onclick="clearFilters()" style="color:#7fb0ff;cursor:pointer">Clear ${libFilter.q?'search':'filters'}</a></div>`;
   else if(mode==="grid") body=`<div class="grid">${arr.map(libCard).join("")}</div>`;
-  else body=`<div class="tblwrap"><table><thead><tr><th></th><th>Title</th><th>Meta</th><th>My</th><th>Hours</th><th>Price</th></tr></thead><tbody>${
-    arr.map(g=>`<tr onclick="openGame(${g.igdbId})"><td>${coverImg(g)}</td><td><b>${esc(g.name)}</b><div style="font-size:11px;color:var(--dim2)">${consoleList(g).join(" · ")}</div></td><td class="num">${g.metascore??"—"}</td><td class="num">${g.myRating??"—"}</td><td class="num">${g.hoursPlayed?g.hoursPlayed+"h":"—"}</td><td class="num">${esc(g.price||"")}</td></tr>`).join("")}</tbody></table></div>`;
+  else body=`<div class="listwrap">${arr.map(listRow).join("")}</div>`;
   document.getElementById("libBody").innerHTML=`<div class="pad">${body}</div>`;
   updateFilterUI();
   updateSortUI();
