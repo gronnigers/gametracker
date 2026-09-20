@@ -497,7 +497,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -767,6 +767,8 @@ function applyFilters(arr){
 function libSearch(v){libFilter.q=v;renderLibrary();}   // live keyword filter over the current shelf
 function updateFilterUI(){["mfilter","dfilter"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.toggle("act",libFilterActive());});}
 // ---- Sorting (Option 3: sort icon → bottom sheet) ----
+function defaultSort(shelf){return shelf==="wishlist"?{field:"release",dir:"asc"}:{field:"name",dir:"asc"};}  // wishlist opens by soonest release
+function getSort(shelf){return libSort[shelf]||defaultSort(shelf);}
 function sortKey(field){return {
   name:g=>(g.name||"").toLowerCase(),
   release:g=>g.first_release_date?g.first_release_date:(g.released?Math.floor(new Date(g.released).getTime()/1000):null),
@@ -775,7 +777,7 @@ function sortKey(field){return {
   added:g=>g.addedDate?new Date(g.addedDate).getTime():null
 }[field]||(g=>(g.name||"").toLowerCase());}
 function sortGames(arr){
-  const st=libSort[currentShelf]||{field:"name",dir:"asc"};
+  const st=getSort(currentShelf);
   const dir=st.dir==="desc"?-1:1, key=sortKey(st.field);
   return arr.sort((a,b)=>{
     let va=key(a),vb=key(b);
@@ -786,10 +788,10 @@ function sortGames(arr){
     return (a.name||"").localeCompare(b.name||"");         // tiebreak by name
   });
 }
-function sortActive(){const st=libSort[currentShelf];return !!(st&&(st.field!=="name"||st.dir!=="asc"));}
+function sortActive(){const st=libSort[currentShelf],d=defaultSort(currentShelf);return !!(st&&(st.field!==d.field||st.dir!==d.dir));}
 function updateSortUI(){["msort","dsort"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.toggle("act",sortActive());});}
 function sortSheetHTML(){
-  const st=libSort[currentShelf]||{field:"name",dir:"asc"};
+  const st=getSort(currentShelf);
   const opts=[["name","Name"],["release","Release date"],["console","Console"],["score","Score"],["added","Recently added"]];
   const rows=opts.map(([f,l])=>`<div class="srow" onclick="setSort('${f}')"><span class="sradio${st.field===f?" on":""}"></span> ${l}</div>`).join("");
   return `<div class="grab"></div><button class="x" onclick="closeModal()">×</button><h2 style="padding-right:34px">Sort · ${SHELF_LABEL[currentShelf]}</h2>
@@ -799,8 +801,8 @@ function sortSheetHTML(){
 }
 function openSort(){modal(`<div id="sortSheet">${sortSheetHTML()}</div>`);}
 function refreshSortSheet(){const el=document.getElementById("sortSheet");if(el)el.innerHTML=sortSheetHTML();}
-function setSort(field){const cur=libSort[currentShelf]||{field:"name",dir:"asc"};libSort[currentShelf]={field,dir:cur.field===field?cur.dir:(SORT_DEFDIR[field]||"asc")};renderLibrary();refreshSortSheet();}
-function setSortDir(dir){const cur=libSort[currentShelf]||{field:"name",dir:"asc"};libSort[currentShelf]={field:cur.field,dir};renderLibrary();refreshSortSheet();}
+function setSort(field){const cur=getSort(currentShelf);libSort[currentShelf]={field,dir:cur.field===field?cur.dir:(SORT_DEFDIR[field]||"asc")};renderLibrary();refreshSortSheet();}
+function setSortDir(dir){const cur=getSort(currentShelf);libSort[currentShelf]={field:cur.field,dir};renderLibrary();refreshSortSheet();}
 function renderLibrary(){
   document.getElementById("segs").innerHTML=SEGMENTS.map(s=>
     `<button class="segbtn ${s===currentShelf?'on':''}" data-s="${s}"><span>${SHELF_LABEL[s]}</span><span class="segct">${by(s).length}</span></button>`).join("");
