@@ -200,6 +200,18 @@
   .rowf{display:flex;gap:10px}.rowf .field{flex:1}
   .actions{display:flex;gap:10px;margin-top:18px}
   .actions .primary{flex:1}
+  /* sort sheet (Option 3) */
+  .sortbtn{position:relative}
+  .sortbtn.act::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--hot)}
+  .sortlist{margin:4px 0 2px}
+  .srow{display:flex;align-items:center;gap:11px;padding:12px 4px;border-bottom:1px solid var(--line);font-size:15px;cursor:pointer}
+  .srow:last-child{border-bottom:0}
+  .sradio{width:19px;height:19px;border-radius:50%;border:2px solid #4a4a55;display:grid;place-items:center;flex:0 0 auto}
+  .sradio.on{border-color:var(--blue,#7fb0ff)}
+  .sradio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--blue,#7fb0ff)}
+  .dirtoggle{display:flex;gap:9px;margin-top:16px}
+  .dirtoggle button{flex:1;background:var(--panel2,#1c1c22);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:12px;font-size:13.5px;font-weight:700;cursor:pointer}
+  .dirtoggle button.on{background:#fff;color:#000;border-color:#fff}
   .danger{background:#2a1114;color:#ff8a8a;border:1px solid #4a1a1f;font-weight:700;padding:14px 16px;border-radius:26px;cursor:pointer;min-height:48px}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + var(--sab) + 16px);
     background:#1c1c20;border:1px solid var(--line2);color:#fff;font-size:13.5px;padding:11px 18px;border-radius:26px;z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
@@ -485,7 +497,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -505,10 +517,11 @@
     <section class="view" data-view="library">
       <div class="topbar mobileHead"><div><div class="tt">Library</div></div><div class="sp"></div>
         <input id="msearch" class="libsearch" type="search" inputmode="search" placeholder="Search…" oninput="libSearch(this.value)" aria-label="Search library">
+        <button class="iconbtn sortbtn" id="msort" onclick="openSort()" aria-label="Sort"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h5"/></svg></button>
         <button class="iconbtn filterbtn" id="mfilter" onclick="openFilters()" aria-label="Filter"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg></button>
         <div class="toggle" id="mtoggle"></div></div>
       <div class="viewhead desktopHead"><div><h1>Library</h1><div class="sub">Your collection, sorted by shelf.</div></div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center"><input id="dsearch" class="libsearch" type="search" inputmode="search" placeholder="Search library…" oninput="libSearch(this.value)" aria-label="Search library"><button class="iconbtn filterbtn" id="dfilter" onclick="openFilters()" aria-label="Filter"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg></button><div class="toggle" id="dtoggle"></div></div></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center"><input id="dsearch" class="libsearch" type="search" inputmode="search" placeholder="Search library…" oninput="libSearch(this.value)" aria-label="Search library"><button class="iconbtn sortbtn" id="dsort" onclick="openSort()" aria-label="Sort"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h5"/></svg></button><button class="iconbtn filterbtn" id="dfilter" onclick="openFilters()" aria-label="Filter"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg></button><div class="toggle" id="dtoggle"></div></div></div>
       <div class="segwrap" id="segs"></div>
       <div id="libBody"></div>
     </section>
@@ -568,6 +581,8 @@ const FMT_LABEL = {physical:"💿 Physical",digital:"⬇️ Digital"};
 const SHELF_LABEL = {collection:"Collection",backlog:"Backlog",completed:"Completed",wishlist:"Wishlist"};
 const SHELF_ICON = {collection:"📚",backlog:"⏳",completed:"✅",wishlist:"💜"};
 const libMode = {};
+const libSort = {};                       // per-shelf {field,dir}; default name/asc
+const SORT_DEFDIR = {name:"asc",console:"asc",release:"desc",score:"desc",added:"desc"};
 let libFilter = {};
 const GT_LABEL = {0:"Main game",8:"Remake",9:"Remaster",10:"Expanded",11:"Port",1:"DLC",2:"Expansion",3:"Bundle",4:"Standalone",5:"Mod",6:"Episode",7:"Season",13:"Pack",14:"Update"};
 const gtLabel = t => GT_LABEL[t]||"";
@@ -751,6 +766,41 @@ function applyFilters(arr){
 }
 function libSearch(v){libFilter.q=v;renderLibrary();}   // live keyword filter over the current shelf
 function updateFilterUI(){["mfilter","dfilter"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.toggle("act",libFilterActive());});}
+// ---- Sorting (Option 3: sort icon → bottom sheet) ----
+function sortKey(field){return {
+  name:g=>(g.name||"").toLowerCase(),
+  release:g=>g.first_release_date?g.first_release_date:(g.released?Math.floor(new Date(g.released).getTime()/1000):null),
+  console:g=>{const c=consoleList(g);return c&&c.length?String(shortPlat(c[0])||c[0]).toLowerCase():null;},
+  score:g=>(typeof g.metascore==="number"?g.metascore:null),
+  added:g=>g.addedDate?new Date(g.addedDate).getTime():null
+}[field]||(g=>(g.name||"").toLowerCase());}
+function sortGames(arr){
+  const st=libSort[currentShelf]||{field:"name",dir:"asc"};
+  const dir=st.dir==="desc"?-1:1, key=sortKey(st.field);
+  return arr.sort((a,b)=>{
+    let va=key(a),vb=key(b);
+    const na=va===null||va===undefined||va==="", nb=vb===null||vb===undefined||vb==="";
+    if(na&&nb)return (a.name||"").localeCompare(b.name||"");
+    if(na)return 1; if(nb)return -1;                       // missing values always last
+    if(va<vb)return -1*dir; if(va>vb)return 1*dir;
+    return (a.name||"").localeCompare(b.name||"");         // tiebreak by name
+  });
+}
+function sortActive(){const st=libSort[currentShelf];return !!(st&&(st.field!=="name"||st.dir!=="asc"));}
+function updateSortUI(){["msort","dsort"].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.toggle("act",sortActive());});}
+function sortSheetHTML(){
+  const st=libSort[currentShelf]||{field:"name",dir:"asc"};
+  const opts=[["name","Name"],["release","Release date"],["console","Console"],["score","Score"],["added","Recently added"]];
+  const rows=opts.map(([f,l])=>`<div class="srow" onclick="setSort('${f}')"><span class="sradio${st.field===f?" on":""}"></span> ${l}</div>`).join("");
+  return `<div class="grab"></div><button class="x" onclick="closeModal()">×</button><h2 style="padding-right:34px">Sort · ${SHELF_LABEL[currentShelf]}</h2>
+    <div class="sortlist">${rows}</div>
+    <div class="dirtoggle"><button class="${st.dir==="asc"?"on":""}" onclick="setSortDir('asc')">↑ Ascending</button><button class="${st.dir==="desc"?"on":""}" onclick="setSortDir('desc')">↓ Descending</button></div>
+    <div class="actions"><button class="primary" onclick="closeModal()">Done</button></div>`;
+}
+function openSort(){modal(`<div id="sortSheet">${sortSheetHTML()}</div>`);}
+function refreshSortSheet(){const el=document.getElementById("sortSheet");if(el)el.innerHTML=sortSheetHTML();}
+function setSort(field){const cur=libSort[currentShelf]||{field:"name",dir:"asc"};libSort[currentShelf]={field,dir:cur.field===field?cur.dir:(SORT_DEFDIR[field]||"asc")};renderLibrary();refreshSortSheet();}
+function setSortDir(dir){const cur=libSort[currentShelf]||{field:"name",dir:"asc"};libSort[currentShelf]={field:cur.field,dir};renderLibrary();refreshSortSheet();}
 function renderLibrary(){
   document.getElementById("segs").innerHTML=SEGMENTS.map(s=>
     `<button class="segbtn ${s===currentShelf?'on':''}" data-s="${s}"><span>${SHELF_LABEL[s]}</span><span class="segct">${by(s).length}</span></button>`).join("");
@@ -758,7 +808,7 @@ function renderLibrary(){
   document.getElementById("dtoggle").innerHTML=toggleHTML();
   ["msearch","dsearch"].forEach(id=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=libFilter.q||"";});  // sync search box to state without stealing focus mid-type
   const all=by(currentShelf);const mode=libMode[currentShelf]||"grid";
-  const arr=applyFilters(all.slice()).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  const arr=sortGames(applyFilters(all.slice()));
   let body;
   if(!all.length) body=`<div class="empty">Nothing in ${SHELF_LABEL[currentShelf]} yet.<br>Tap <b>Add</b> to find a game.</div>`;
   else if(!arr.length) body=`<div class="empty">No games match${libFilter.q?` "${esc(libFilter.q)}"`:" these filters"}.<br><a onclick="clearFilters()" style="color:#7fb0ff;cursor:pointer">Clear ${libFilter.q?'search':'filters'}</a></div>`;
@@ -767,6 +817,7 @@ function renderLibrary(){
     arr.map(g=>`<tr onclick="openGame(${g.igdbId})"><td>${coverImg(g)}</td><td><b>${esc(g.name)}</b><div style="font-size:11px;color:var(--dim2)">${consoleList(g).join(" · ")}</div></td><td class="num">${g.metascore??"—"}</td><td class="num">${g.myRating??"—"}</td><td class="num">${g.hoursPlayed?g.hoursPlayed+"h":"—"}</td><td class="num">${esc(g.price||"")}</td></tr>`).join("")}</tbody></table></div>`;
   document.getElementById("libBody").innerHTML=`<div class="pad">${body}</div>`;
   updateFilterUI();
+  updateSortUI();
 }
 function openFilters(){
   const all=by(currentShelf);
