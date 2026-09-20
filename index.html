@@ -111,6 +111,17 @@
   .row{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding:0 16px 6px;padding-left:calc(16px + var(--sal));scrollbar-width:none}
   .row::-webkit-scrollbar{display:none}
   .row .c{flex:0 0 118px}
+  .railscroll{position:relative}
+  .railnav{display:none}
+  @media (hover:hover) and (pointer:fine){
+    .railnav{display:flex;align-items:center;position:absolute;top:0;bottom:6px;width:52px;z-index:6;border:0;cursor:pointer;
+      color:#cfcfd6;font-size:30px;font-weight:400;line-height:1;background:transparent;opacity:0;transition:opacity .18s;padding:0;-webkit-tap-highlight-color:transparent}
+    .railnav.prev{left:0;justify-content:flex-start;padding-left:10px;background:linear-gradient(90deg,var(--bg) 34%,transparent)}
+    .railnav.next{right:0;justify-content:flex-end;padding-right:10px;background:linear-gradient(270deg,var(--bg) 34%,transparent)}
+    .railscroll:hover .railnav{opacity:.92}
+    .railnav:hover{opacity:1;color:#fff}
+    .railnav:disabled{opacity:0!important;pointer-events:none}
+  }
 
   /* stats */
   .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
@@ -467,11 +478,11 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.11</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.12</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
-      <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
-      <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
-      <div class="rail" id="wishRail"><h3>💜 Wishlist watch</h3><div class="row" id="r-wish"></div></div>
+      <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
+      <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
+      <div class="rail" id="wishRail"><h3>💜 Wishlist watch</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-wish',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-wish"></div><button class="railnav next" onclick="railScroll('r-wish',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail" id="tiwRail"><h3>🎮 This week in gaming</h3><div id="tiwBody"></div></div>
       <div class="rail" id="dsRail"><h3>💎 Don't sleep on</h3><div id="dsBody"></div></div>
     </section>
@@ -817,20 +828,29 @@ function renderRecentRail(){
   const rr=document.getElementById("r-recent");if(!rr)return;
   rr.innerHTML=by("completed").map(libCard).join("")||`<div class="mt" style="padding:0 16px">Finish a game to see it here.</div>`;
 }
+// prefer the live IGDB timestamp (first_release_date) over the stored ISO string, so the
+// countdown here uses the exact same source + math as the Upcoming list (daysUntil)
+function wishTs(g){return g.first_release_date?g.first_release_date*1000:(g.released?new Date(g.released).getTime():null);}
 function wishCard(g){
-  const d=g.released?new Date(g.released):null, now=new Date();
+  const ts=g.first_release_date, nowMs=Date.now();
   let sub;
-  if(d&&d>now){const days=Math.ceil((d-now)/86400000);sub=`<span style="color:${days<=60?'#ff6b6b':'#f2b661'};font-weight:700">${days<=0?"out now":"in "+days+"d"}</span>`;}
-  else sub=d?d.getFullYear():"TBA";
+  if(ts){
+    if(ts*1000>nowMs){const days=daysUntil(ts);sub=`<span style="color:${days<=60?'#ff6b6b':'#f2b661'};font-weight:700">${days<=0?"out now":"in "+days+"d"}</span>`;}
+    else sub=new Date(ts*1000).getFullYear();
+  }else{
+    const d=g.released?new Date(g.released):null;
+    if(d&&d.getTime()>nowMs){const days=Math.max(0,Math.ceil((d.getTime()-nowMs)/86400000));sub=`<span style="color:${days<=60?'#ff6b6b':'#f2b661'};font-weight:700">in ${days}d</span>`;}
+    else sub=d?d.getFullYear():"TBA";
+  }
   return `<div class="c" onclick="openGame(${g.igdbId})"><div class="co">${coverImg(g)}</div><div class="nm">${esc(g.name)}</div><div class="mt">${sub}</div></div>`;
 }
 function renderWishRail(){
   const rail=document.getElementById("wishRail"), el=document.getElementById("r-wish");
   if(!rail||!el)return;
-  const now=new Date();
+  const nowMs=Date.now();
   const wl=LIB.games.filter(g=>g.shelf==="wishlist").slice().sort((a,b)=>{
-    const da=a.released?new Date(a.released):null, db=b.released?new Date(b.released):null;
-    const fa=da&&da>now, fb=db&&db>now;
+    const da=wishTs(a), db=wishTs(b);
+    const fa=da&&da>nowMs, fb=db&&db>nowMs;
     if(fa&&fb)return da-db; if(fa)return -1; if(fb)return 1;
     if(da&&db)return db-da; return 0;
   });
@@ -838,6 +858,28 @@ function renderWishRail(){
   if(!wl.length)return;
   el.innerHTML=wl.map(wishCard).join("");
   startRoll("r-wish",1);
+}
+// keep wishlist release dates fresh — IGDB revises dates, so a date captured at wishlist-time
+// goes stale; re-pull the live first_release_date so the watch matches the Upcoming list exactly
+let wishSynced=false;
+async function syncWishDates(force){
+  const wl=LIB.games.filter(g=>g.shelf==="wishlist"&&g.igdbId);
+  if(!wl.length){wishSynced=true;return;}
+  if(wishSynced&&!force)return;
+  wishSynced=true;
+  const ids=[...new Set(wl.map(g=>g.igdbId))];
+  const rows=await igdb("games",`fields id,first_release_date; where id=(${ids.join(",")}); limit ${ids.length};`);
+  if(!rows||!rows.length)return;
+  const map={}; rows.forEach(r=>{if("first_release_date" in r)map[r.id]=r.first_release_date||null;});
+  let changed=false;
+  wl.forEach(g=>{
+    if(!(g.igdbId in map))return;                       // no date field returned — leave as-is
+    const ts=map[g.igdbId];
+    const iso=ts?new Date(ts*1000).toISOString().slice(0,10):null;
+    if(g.first_release_date!==ts){g.first_release_date=ts;changed=true;}
+    if(g.released!==iso){g.released=iso;changed=true;}
+  });
+  if(changed){renderWishRail();queueSave();}
 }
 let THISWEEK=[], GEM=null;
 function thisWeekList(all){
@@ -982,30 +1024,57 @@ async function renderDiscover(force){
   renderWheels();
   renderThisWeek();
   discoverLoaded=true;
+  syncWishDates();   // refresh wishlist countdowns against live IGDB dates
 }
 /* auto-scrolling "rolling wheel" rails — dir 1 = left→right, -1 = right→left */
 const rolls={};
+// enable/disable the desktop chevrons based on how far the row is scrolled
+function updateRailNav(el){
+  const sc=el.closest&&el.closest(".railscroll"); if(!sc)return;
+  const p=sc.querySelector(".railnav.prev"), n=sc.querySelector(".railnav.next");
+  const max=el.scrollWidth-el.clientWidth-1;
+  if(p)p.disabled=el.scrollLeft<=1;
+  if(n)n.disabled=el.scrollLeft>=max;
+}
+// manual chevron scroll (desktop, no touch) — smooth, and pause the auto-roll so they don't fight
+function railScroll(id,dir){
+  const el=document.getElementById(id);if(!el)return;
+  const s=rolls[id]; if(s)s.pauseUntil=Date.now()+4000;
+  const amt=Math.max(180,el.clientWidth*0.8);
+  el.scrollBy({left:dir*amt,behavior:"smooth"});
+}
 function startRoll(id,dir){
   const el=document.getElementById(id);if(!el)return;
   if(rolls[id])return;
+  const st={pauseUntil:0,pos:0,last:0};
+  rolls[id]=st;
   el.scrollLeft = dir<0 ? el.scrollWidth : 0;
-  let pauseUntil=0;
-  const bump=()=>pauseUntil=Date.now()+2500;
+  st.pos = el.scrollLeft;
+  const bump=()=>st.pauseUntil=Date.now()+2500;
   el.addEventListener("pointerdown",bump);
+  el.addEventListener("touchstart",bump,{passive:true});
   el.addEventListener("touchmove",bump,{passive:true});
   el.addEventListener("wheel",bump,{passive:true});
-  el.addEventListener("mouseenter",()=>pauseUntil=Date.now()+3.6e6);
-  el.addEventListener("mouseleave",()=>pauseUntil=0);
-  rolls[id]=setInterval(()=>{
-    if(Date.now()<pauseUntil)return;
-    if(dir<0){
-      if(el.scrollLeft<=0)el.scrollTo({left:el.scrollWidth,behavior:'smooth'});
-      else el.scrollLeft-=1;
-    }else{
-      if(el.scrollLeft+el.clientWidth>=el.scrollWidth-1)el.scrollTo({left:0,behavior:'smooth'});
-      else el.scrollLeft+=1;
-    }
-  },28);
+  el.addEventListener("mouseenter",()=>st.pauseUntil=Date.now()+3.6e6);
+  el.addEventListener("mouseleave",()=>{st.pauseUntil=0;st.pos=el.scrollLeft;st.last=0;});
+  el.addEventListener("scroll",()=>updateRailNav(el),{passive:true});
+  const SPEED=34;   // px/sec — matches the old 1px/28ms crawl, now continuous + sub-pixel via rAF
+  const step=(t)=>{
+    const s=rolls[id]; if(!s)return;
+    if(!s.last)s.last=t;
+    const dt=Math.min(60,t-s.last)/1000; s.last=t;   // delta-timed so speed is frame-rate independent
+    const max=el.scrollWidth-el.clientWidth;
+    if(Date.now()>=s.pauseUntil && max>1){
+      if(Math.abs(el.scrollLeft-s.pos)>2) s.pos=el.scrollLeft;   // resync after a manual scroll
+      s.pos += dir*SPEED*dt;
+      if(dir>0 && s.pos>=max) s.pos=0;
+      else if(dir<0 && s.pos<=0) s.pos=max;
+      el.scrollLeft=s.pos;
+    }else{ s.pos=el.scrollLeft; }
+    s.raf=requestAnimationFrame(step);
+  };
+  updateRailNav(el);
+  st.raf=requestAnimationFrame(step);
 }
 
 /* ---------------- Discovery: console grid ---------------- */
