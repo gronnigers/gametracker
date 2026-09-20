@@ -111,6 +111,13 @@
   .row{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding:0 16px 6px;padding-left:calc(16px + var(--sal));scrollbar-width:none}
   .row::-webkit-scrollbar{display:none}
   .row .c{flex:0 0 118px}
+  /* Wishlist out-now vs upcoming (Option 3): glow what's out, dim what's still waiting */
+  .c.ws-now .co{box-shadow:0 0 0 2px var(--good),0 6px 16px rgba(53,196,106,.20)}
+  .c.ws-soon .co img{opacity:.5;filter:saturate(.7)}
+  .c.ws-soon .nm{color:var(--dim)}
+  .wtag{position:absolute;left:0;right:0;bottom:0;z-index:4;text-align:center;font-size:10.5px;font-weight:800;padding:4px 0;letter-spacing:.3px}
+  .wtag.now{background:var(--good);color:#04140a}
+  .wtag.soon{background:rgba(0,0,0,.72);color:#f2b661}
   .railscroll{position:relative}
   .railnav{display:none}
   @media (hover:hover) and (pointer:fine){
@@ -478,7 +485,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -710,14 +717,22 @@ const coverImg=g=>`<img loading="lazy" src="${IMG(g.cover)}" alt="${esc(g.name)}
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 function libCard(g){
-  let l2="";
+  let l2="", wsClass="", wtag="";
   if(g.completed) l2=(g.myRating?starStr(g.myRating):"")+`<div class="mt">${g.hoursPlayed?g.hoursPlayed+"h":""}</div>`;
-  else if(g.shelf==="wishlist") l2=`<div class="mt">${g.price?'<span style="color:#7ff0a6">'+esc(g.price)+'</span>':consoleList(g).slice(0,2).join(" · ")}</div>`;
+  else if(g.shelf==="wishlist"){
+    l2=`<div class="mt">${g.price?'<span style="color:#7ff0a6">'+esc(g.price)+'</span>':consoleList(g).slice(0,2).join(" · ")}</div>`;
+    // out-now vs upcoming treatment (glow the ones you can grab, dim the ones still waiting)
+    const ts=g.first_release_date?g.first_release_date:(g.released?Math.floor(new Date(g.released).getTime()/1000):null);
+    if(ts){
+      if(ts*1000>Date.now()){const d=daysUntil(ts);wsClass=" ws-soon";wtag=`<div class="wtag soon">◷ ${d<=0?"soon":"in "+d+"d"}</div>`;}
+      else {wsClass=" ws-now";wtag=`<div class="wtag now">OUT NOW</div>`;}
+    }
+  }
   else l2=`<div class="mt">${consoleList(g).slice(0,2).join(" · ")}${g.backlog?' · <span style="color:#8fd0ff">⏳</span>':''}</div>`;
   const done=g.completed?`<span class="tg done">✓</span>`:"";
   const dup=g.copies?Math.max(1,...Object.values(g.copies)):1;
   const badges=`${g.sealed?'<span class="seal">🔒</span>':""}${isColl(g)?'<span class="colltag">📦</span>':""}${dup>1?`<span class="dupe">×${dup}</span>`:""}`;
-  return `<div class="c" onclick="openGame(${g.igdbId})"><div class="co">${done}${badges}${g.metascore?`<span class="sc" style="color:${scCol(g.metascore)}">${g.metascore}</span>`:""}${coverImg(g)}</div><div class="nm">${esc(g.name)}</div>${l2}</div>`;
+  return `<div class="c${wsClass}" onclick="openGame(${g.igdbId})"><div class="co">${done}${badges}${g.metascore?`<span class="sc" style="color:${scCol(g.metascore)}">${g.metascore}</span>`:""}${coverImg(g)}${wtag}</div><div class="nm">${esc(g.name)}</div>${l2}</div>`;
 }
 
 /* ---------------- Library view ---------------- */
