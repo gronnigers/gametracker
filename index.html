@@ -465,7 +465,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.8</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.9.9</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="row" id="r-trend"></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="row" id="r-up"></div></div>
@@ -602,15 +602,22 @@ async function handleRedirect(){
     history.replaceState({},'',REDIRECT_URI);return true;}
   return false;
 }
+let _refreshing=null;   // single-flight: many 401s at once share ONE refresh so the rotating refresh_token isn't reused/invalidated
 async function refreshToken(){
-  const rt=localStorage.getItem('gt_ref');if(!rt)return false;
-  const body=new URLSearchParams({client_id:CONFIG.CLIENT_ID,grant_type:'refresh_token',refresh_token:rt,scope:CONFIG.SCOPES});
-  const r=await fetch(`https://login.microsoftonline.com/${CONFIG.TENANT}/oauth2/v2.0/token`,
-    {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
-  const j=await r.json();
-  if(j.access_token){accessToken=j.access_token;localStorage.setItem('gt_tok',j.access_token);
-    if(j.refresh_token)localStorage.setItem('gt_ref',j.refresh_token);return true;}
-  return false;
+  if(_refreshing)return _refreshing;
+  _refreshing=(async()=>{
+    const rt=localStorage.getItem('gt_ref');if(!rt)return false;
+    try{
+      const body=new URLSearchParams({client_id:CONFIG.CLIENT_ID,grant_type:'refresh_token',refresh_token:rt,scope:CONFIG.SCOPES});
+      const r=await fetch(`https://login.microsoftonline.com/${CONFIG.TENANT}/oauth2/v2.0/token`,
+        {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+      const j=await r.json();
+      if(j.access_token){accessToken=j.access_token;localStorage.setItem('gt_tok',j.access_token);
+        if(j.refresh_token)localStorage.setItem('gt_ref',j.refresh_token);return true;}
+    }catch(e){}
+    return false;
+  })();
+  try{return await _refreshing;}finally{_refreshing=null;}
 }
 function signOut(){['gt_tok','gt_ref','gt_pkv','gt_pks'].forEach(k=>localStorage.removeItem(k));location.reload();}
 
@@ -637,7 +644,8 @@ async function igdb(endpoint,query){
 
 /* ---------------- Library load / save ---------------- */
 async function loadLibrary(){
-  const r=await gF(LIB_PATH+':/content');
+  let r=await gF(LIB_PATH+':/content');
+  if(r&&!r.ok&&r.status!==404){await new Promise(s=>setTimeout(s,500));r=await gF(LIB_PATH+':/content');}  // one retry on a transient error so a hiccup doesn't leave the app blank
   if(r&&r.ok){try{LIB=await r.json();}catch(e){LIB={version:1,updated:null,games:[]};}}
   else if(r&&r.status===404){LIB={version:1,updated:null,games:[]};await saveLibrary();}
   LIB.games=LIB.games||[];
@@ -1511,6 +1519,9 @@ document.addEventListener("click",e=>{
   const cameBack=await handleRedirect();
   if(accessToken||localStorage.getItem('gt_tok')||cameBack){
     showApp();
+    // proactively mint a fresh access token before the first load — the stored one is often expired (~1h),
+    // which otherwise makes the first OneDrive read 401 and the app look blank until a manual refresh
+    if(!cameBack&&localStorage.getItem('gt_ref'))await refreshToken();
     await loadLibrary();
     refreshAll();
     renderDiscover();
