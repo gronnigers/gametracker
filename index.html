@@ -424,9 +424,9 @@
     .brand{position:relative;display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;padding:4px 8px 16px}
     .brandbtn{background:none;border:0;padding:0;margin:0;cursor:pointer;display:flex;line-height:0;border-radius:8px}
     .brandbtn:focus-visible{outline:2px solid var(--dim2);outline-offset:2px}
-    .brandbtn img{width:26px;height:26px;object-fit:contain;display:block;image-rendering:auto;transition:transform .12s}
+    .brandbtn img{width:42px;height:42px;object-fit:contain;display:block;image-rendering:auto;transition:transform .12s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
     .brandbtn:hover img{transform:scale(1.08)}
-    .iconpicker{position:absolute;top:34px;left:0;z-index:40;display:none;grid-template-columns:repeat(5,1fr);gap:4px;
+    .iconpicker{position:absolute;top:50px;left:0;z-index:40;display:none;grid-template-columns:repeat(5,1fr);gap:4px;
       background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:8px;width:236px;
       box-shadow:0 18px 40px -12px #000,0 0 0 1px #0006}
     .iconpicker.open{display:grid}
@@ -540,7 +540,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.12.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.12.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
