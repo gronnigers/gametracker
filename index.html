@@ -188,6 +188,9 @@
   .libsearch::-webkit-search-cancel-button{-webkit-appearance:none;height:14px;width:14px;background:var(--dim2,#6b6b78);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;cursor:pointer}
   .mobileHead .libsearch{width:130px;height:32px}
   .desktopHead .libsearch{width:190px}
+  /* iPhone: keep the Library header from overflowing (search flexes, no dead spacer) so the page can't float horizontally */
+  [data-view="library"] .mobileHead .sp{display:none}
+  [data-view="library"] .mobileHead .libsearch{flex:1;min-width:0;width:auto}
   .stat.clk{cursor:pointer;transition:transform .08s ease,border-color .12s ease}
   .stat.clk:hover{transform:translateY(-1px);filter:brightness(1.15)}
   .stat.clk:active{transform:translateY(0)}
@@ -526,7 +529,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.7</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.10.8</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
