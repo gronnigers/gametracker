@@ -543,7 +543,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.13.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.13.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -1308,7 +1308,7 @@ async function doSearch(){
   const q=document.getElementById("q").value.trim();if(!q)return;
   document.getElementById("results").innerHTML=`<div class="mt">Searching…</div>`;
   const raw=await igdb("games",`search "${q.replace(/"/g,'')}"; fields name,cover.image_id,first_release_date,total_rating,total_rating_count,platforms.id,parent_game,version_parent; where game_type=(0,3,4,8,9,10,11,13) & version_parent=null & cover!=null; limit 50;`);
-  const major=raw.filter(g=>(g.platforms||[]).some(p=>MAJOR.has(p.id)));
+  const major=raw.filter(g=>(g.platforms||[]).some(p=>MAJOR.has(p.id)||TRACKED_PIDS.has(p.id)));
   const map={};
   major.forEach(g=>{const k=g.name.toLowerCase().trim();const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
   const res=Object.values(map).sort((a,b)=>(b.total_rating_count||0)-(a.total_rating_count||0)).slice(0,30);
