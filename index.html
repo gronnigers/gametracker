@@ -543,7 +543,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.13.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.14.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -1310,12 +1310,15 @@ async function doSearch(){
   const raw=await igdb("games",`search "${q.replace(/"/g,'')}"; fields name,cover.image_id,first_release_date,total_rating,total_rating_count,platforms.id,parent_game,version_parent; where game_type=(0,3,4,8,9,10,11,13) & version_parent=null & cover!=null; limit 50;`);
   const major=raw.filter(g=>(g.platforms||[]).some(p=>MAJOR.has(p.id)||TRACKED_PIDS.has(p.id)));
   const map={};
-  major.forEach(g=>{const k=g.name.toLowerCase().trim();const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
+  // dedup same-named entries, but keep genuinely different releases apart (e.g. Ratchet & Clank PS2 2002 vs PS5 remake 2016):
+  // key on name + release year so distinct-era games each survive; only true same-year duplicates (regional variants) collapse (highest rating count wins)
+  major.forEach(g=>{const y=g.first_release_date?new Date(g.first_release_date*1000).getFullYear():"?";const k=g.name.toLowerCase().trim()+"|"+y;const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
   const res=Object.values(map).sort((a,b)=>(b.total_rating_count||0)-(a.total_rating_count||0)).slice(0,30);
   document.getElementById("results").innerHTML=res.map(g=>{
     const owned=famOwned(g);
     const add=owned?`<span class="added">✓</span>`:`<button class="plus" data-gid="${g.id}" onclick="event.stopPropagation();chooseShelf(${g.id})" aria-label="Add">+</button>`;
-    return `<div class="c" onclick="openGame(${g.id})"><div class="co"><img loading="lazy" src="${IMG(g.cover&&g.cover.image_id)}" onerror="this.style.opacity=0;this.parentNode.style.background='#222'">${add}</div><div class="nm" style="font-size:11px">${esc(g.name)}</div></div>`;
+    const yr=g.first_release_date?new Date(g.first_release_date*1000).getFullYear():"";
+    return `<div class="c" onclick="openGame(${g.id})"><div class="co"><img loading="lazy" src="${IMG(g.cover&&g.cover.image_id)}" onerror="this.style.opacity=0;this.parentNode.style.background='#222'">${add}</div><div class="nm" style="font-size:11px">${esc(g.name)}${yr?` <span style="color:var(--dim2)">· ${yr}</span>`:""}</div></div>`;
   }).join("")||`<div class="mt">No results — try a different title.</div>`;
 }
 let CUR=null;
@@ -1459,12 +1462,28 @@ function trackEdit(l){
 function backToTrack(){const g=ownedGame(CUR.id);const t=mEl("trackArea");if(t)t.innerHTML=trackB(CUR.id,CUR.det,g);}
 function editTracking(){const t=mEl("trackArea");if(t)t.innerHTML=trackEdit(LIB.games.find(g=>g.igdbId===CUR.id));}
 const COLL_CACHE={};
+const COLL_ANCHOR={};   // collection id -> {pid,name}: a platform-themed compilation (e.g. "Sega Genesis Classics") pins all members to that console
+const CONSOLE_KEYWORDS=[[/mega\s*drive|genesis/i,29],[/master system/i,64],[/super\s*nintendo|super\s*nes|\bsnes\b/i,19],[/\bnes\b|nintendo entertainment/i,18],[/nintendo\s*64|\bn64\b/i,4],[/game\s*boy advance|\bgba\b/i,24],[/game\s*boy color/i,22],[/game\s*boy/i,33],[/dreamcast/i,23],[/sega saturn|\bsaturn\b/i,32],[/game\s*gear/i,35],[/virtual boy/i,87],[/gamecube/i,21],[/nintendo\s*ds/i,20],[/nintendo\s*3ds|\b3ds\b/i,37],[/\bwii u\b/i,41],[/\bwii\b/i,5],[/playstation\s*2|\bps2\b/i,8],[/playstation portable|\bpsp\b/i,38],[/playstation|ps\s*one|\bps1\b/i,7],[/turbografx|pc engine/i,86],[/neo\s*geo/i,80]];
+// from a compilation's name, guess the console it's a compilation OF (e.g. "Sega Genesis Classics" -> Genesis 29); only if that platform is tracked
+function collectionAnchorPid(name){for(const [re,pid] of CONSOLE_KEYWORDS){if(re.test(name||"")&&TRACKED_PIDS.has(pid))return pid;}return null;}
 async function loadCollection(id,det){
   let items=COLL_CACHE[id];
   if(!items){
-    const FLDS="fields id,name,first_release_date,cover.image_id,parent_game,version_parent,game_type,platforms.name";
+    const FLDS="fields id,name,first_release_date,cover.image_id,parent_game,version_parent,game_type,platforms.id,platforms.name";
     const members=await igdb("games",`${FLDS}; where bundles=(${id}); limit 60;`)||[];
     const cache={}; members.forEach(m=>cache[m.id]=m);
+    // Platform-themed compilation? If the collection's NAME names a console (e.g. "Sega Genesis Classics") and most members
+    // actually shipped on it, pin every member to that console — so the roster reads "Genesis" (not IGDB's noisy port list)
+    // and + Track tags the game as that console (lines up with Platforms → that console).
+    let anchor=null;
+    const apid=collectionAnchorPid(det&&det.name);
+    if(apid){
+      const withA=members.filter(m=>(m.platforms||[]).some(p=>p.id===apid));
+      if(withA.length>=Math.max(3,members.length*0.5)){
+        const pn=(withA[0].platforms||[]).find(p=>p.id===apid);
+        if(pn){anchor={pid:apid,name:pn.name};COLL_ANCHOR[id]=anchor;}
+      }
+    }
     // a port(11)/version points at its source; remakes(8) keep their own identity
     const parentOf=m=>(m&&(m.version_parent||m.game_type===11))?(m.parent_game||m.version_parent):null;
     const fetchId=async pid=>{ if(cache[pid])return cache[pid]; const pr=await igdb("games",`${FLDS}; where id=(${pid}); limit 1;`)||[]; if(pr[0])cache[pid]=pr[0]; return pr[0]; };
@@ -1485,9 +1504,11 @@ async function loadCollection(id,det){
       if(drop.has(m.id))continue;      // this member is superseded by a localized sibling in the same bundle
       const src=await originalOf(m);   // prefer the ORIGINAL game
       if(seen[src.id])continue; seen[src.id]=1;
+      const hasAnchor=!!(anchor&&(src.platforms||[]).some(p=>p.id===anchor.pid));
       items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
         released:src.first_release_date?new Date(src.first_release_date*1000).getFullYear():"",
-        plats:(src.platforms||[]).map(x=>x.name)});
+        plats:hasAnchor?[anchor.name]:(src.platforms||[]).map(x=>x.name),   // themed compilation: show the collection's console
+        console:hasAnchor?anchor.name:null});                              // ...and tag it that console when tracked
     }
     items.sort((a,b)=>(a.released||9999)-(b.released||9999));
     COLL_CACHE[id]=items;
@@ -1516,7 +1537,12 @@ async function trackMember(mid){
   if(ownedGame(mid)){toast("Already in your library");return;}
   const arr=await igdb("games",DETAIL_FIELDS+` where id=${mid};`);
   const d=arr[0]; if(!d){toast("Couldn't add that one");return;}
-  const g=gameFromDet(d,"collection"); g.shelf="collection"; LIB.games.push(g);
+  const g=gameFromDet(d,"collection"); g.shelf="collection";
+  // themed compilation (e.g. Genesis Classics): tag the added game with the collection's console so it reads right + lines up with Platforms
+  const item=(CUR&&COLL_CACHE[CUR.id]||[]).find(x=>x.id===mid);
+  const acon=(item&&item.console)||(COLL_ANCHOR[CUR&&CUR.id]&&(d.platforms||[]).some(p=>p.id===COLL_ANCHOR[CUR.id].pid)?COLL_ANCHOR[CUR.id].name:null);
+  if(acon){g.consoles=[acon];g.formats={[acon]:[]};}
+  LIB.games.push(g);
   await saveLibrary(); refreshAll(); cacheCover(g).then(()=>queueSave());
   if(CUR&&COLL_CACHE[CUR.id]) renderCollArea(CUR.id,COLL_CACHE[CUR.id]);
   toast("📚 Added "+g.name+" to your collection");
