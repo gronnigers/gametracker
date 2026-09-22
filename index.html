@@ -543,7 +543,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.14.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.14.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -1507,6 +1507,7 @@ async function loadCollection(id,det){
       const hasAnchor=!!(anchor&&(src.platforms||[]).some(p=>p.id===anchor.pid));
       items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
         released:src.first_release_date?new Date(src.first_release_date*1000).getFullYear():"",
+        parent:src.parent_game||src.version_parent||null,                  // so the roster owned-check is family-aware (own the ORIGINAL, member is a remaster/port)
         plats:hasAnchor?[anchor.name]:(src.platforms||[]).map(x=>x.name),   // themed compilation: show the collection's console
         console:hasAnchor?anchor.name:null});                              // ...and tag it that console when tracked
     }
@@ -1519,11 +1520,11 @@ async function loadCollection(id,det){
 function renderCollArea(id,items){
   const box=mEl("collArea"); if(!box)return;
   if(!items.length){box.innerHTML=`<div class="mt" style="color:var(--dim2);font-size:12px">No sub-games listed for this collection in IGDB.</div>`;return;}
-  const played=items.filter(m=>{const o=ownedGame(m.id);return o&&o.completed;}).length;
+  const played=items.filter(m=>{const o=famOwned({id:m.id,parent:m.parent});return o&&o.completed;}).length;
   const pct=Math.round(played/items.length*100);
   const ring=`<div class="cring" style="background:conic-gradient(var(--good) ${pct}%,#22222a 0)"><i>${played}/${items.length}</i></div>`;
   const rows=items.map(m=>{
-    const o=ownedGame(m.id); let cls,chip;
+    const o=famOwned({id:m.id,parent:m.parent}); let cls,chip;
     if(o&&o.completed){cls="done";chip='<span class="cst done">✓ Played</span>';}
     else if(o){cls="own";chip='<span class="cst own">● Owned</span>';}
     else {cls="add";chip=`<button class="cst add" onclick="event.stopPropagation();trackMember(${m.id})">+ Track</button>`;}
@@ -1534,12 +1535,12 @@ function renderCollArea(id,items){
   box.innerHTML=`<div class="collhdr">${ring}<div class="collmeta"><b>${items.length} games in this collection</b><span>${pct}% played · backlog stays off for the collection</span></div></div><div class="croster">${rows}</div>`;
 }
 async function trackMember(mid){
-  if(ownedGame(mid)){toast("Already in your library");return;}
+  const item=(CUR&&COLL_CACHE[CUR.id]||[]).find(x=>x.id===mid);
+  if(famOwned({id:mid,parent:item&&item.parent})){toast("Already in your library");return;}
   const arr=await igdb("games",DETAIL_FIELDS+` where id=${mid};`);
   const d=arr[0]; if(!d){toast("Couldn't add that one");return;}
   const g=gameFromDet(d,"collection"); g.shelf="collection";
   // themed compilation (e.g. Genesis Classics): tag the added game with the collection's console so it reads right + lines up with Platforms
-  const item=(CUR&&COLL_CACHE[CUR.id]||[]).find(x=>x.id===mid);
   const acon=(item&&item.console)||(COLL_ANCHOR[CUR&&CUR.id]&&(d.platforms||[]).some(p=>p.id===COLL_ANCHOR[CUR.id].pid)?COLL_ANCHOR[CUR.id].name:null);
   if(acon){g.consoles=[acon];g.formats={[acon]:[]};}
   LIB.games.push(g);
