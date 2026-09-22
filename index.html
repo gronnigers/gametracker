@@ -543,7 +543,7 @@
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.14.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.14.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -930,7 +930,7 @@ function renderStats(){
   const tally=(arr,keyfn)=>{const m={};arr.forEach(g=>(keyfn(g)||[]).forEach(k=>m[k]=(m[k]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
   const plat=tally(owned,g=>consoleList(g)), genre=tally(owned,g=>g.genres);
   const maxp=plat[0]?plat[0][1]:1, maxg=genre[0]?genre[0][1]:1;
-  const bars=(rows,max)=>rows.length?rows.slice(0,7).map(([k,n],i)=>`<div class="bar2"><span class="lbl">${esc(k)}</span><div class="track"><div class="fill" style="width:${Math.round(n/max*100)}%;background:${PAL[i%PAL.length]}"></div></div><span class="n">${n}</span></div>`).join(""):`<div class="mt">Add games to see this.</div>`;
+  const bars=(rows,max,lim=7)=>rows.length?rows.slice(0,lim).map(([k,n],i)=>`<div class="bar2"><span class="lbl">${esc(k)}</span><div class="track"><div class="fill" style="width:${Math.round(n/max*100)}%;background:${PAL[i%PAL.length]}"></div></div><span class="n">${n}</span></div>`).join(""):`<div class="mt">Add games to see this.</div>`;
   const top=[...rated].sort((a,b)=>b.myRating-a.myRating).slice(0,5);
   const recent=[...done].filter(g=>g.completedDate).sort((a,b)=>b.completedDate.localeCompare(a.completedDate)).slice(0,10);
   const sealedN=owned.filter(g=>g.sealed).length;
@@ -944,7 +944,7 @@ function renderStats(){
     <div class="tiles6">${tiles.map(([l,v,c,shelf,sf])=>`<div class="stat${shelf?' clk':''}" ${shelf?`onclick="kpiGo('${shelf}',${sf})" role="button" tabindex="0"`:''} style="background:${c}14;border-color:${c}44"><div class="sn" style="color:${c}">${v}</div><div class="sk">${l}${shelf?' <span class="kparrow">›</span>':''}</div></div>`).join("")}</div>
     ${recent.length?`<div class="panel"><h3>Recently completed</h3><div class="row srow">${recent.map(libCard).join("")}</div></div>`:""}
     ${top.length?`<div class="panel"><h3>Top rated</h3>${top.map(g=>`<div class="bar2"><span class="lbl">${esc(g.name)}</span><div class="track"><div class="fill" style="width:${g.myRating*10}%;background:linear-gradient(90deg,#ffb020,#ff8a3d)"></div></div><span class="n">${g.myRating}</span></div>`).join("")}</div>`:""}
-    <div class="panel"><h3>By console</h3>${bars(plat,maxp)}</div>
+    <div class="panel"><h3>By console</h3>${bars(plat,maxp,999)}</div>
     <div class="panel"><h3>By genre</h3>${bars(genre,maxg)}</div>
     ${!owned.length?'<div class="empty">Add some games and your stats will fill in here.</div>':''}`;
 }
