@@ -1312,15 +1312,16 @@ async function doSearch(){
   const map={};
   // dedup same-named entries, but keep genuinely different releases apart (e.g. Ratchet & Clank PS2 2002 vs PS5 remake 2016):
   // key on name + release year so distinct-era games each survive; only true same-year duplicates (regional variants) collapse (highest rating count wins)
-  major.forEach(g=>{const y=g.first_release_date?new Date(g.first_release_date*1000).getFullYear():"?";const k=g.name.toLowerCase().trim()+"|"+y;const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
+  major.forEach(g=>{const y=g.first_release_date?new Date(g.first_release_date*1000).getFullYear():"?";const pk=(g.platforms||[]).map(p=>p.id).sort((a,b)=>a-b).join(",");const k=g.name.toLowerCase().trim()+"|"+y+"|"+pk;/* platform in key: Willow NES vs Willow arcade are different games */const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
   const qn=q.toLowerCase().trim(), rel=g=>{const n=g.name.toLowerCase().trim();return n===qn?3:n.startsWith(qn)?2:n.includes(qn)?1:0;};
   // relevance first (exact > starts-with > contains), then popularity — so a title named exactly what you typed never gets buried
   const res=Object.values(map).sort((a,b)=>(rel(b)-rel(a))||((b.total_rating_count||0)-(a.total_rating_count||0))).slice(0,48);
+  const dupName={};res.forEach(g=>{const n=g.name.toLowerCase().trim();dupName[n]=(dupName[n]||0)+1;});
   document.getElementById("results").innerHTML=res.map(g=>{
     const owned=famOwned(g);
     const add=owned?`<span class="added">✓</span>`:`<button class="plus" data-gid="${g.id}" onclick="event.stopPropagation();chooseShelf(${g.id})" aria-label="Add">+</button>`;
     const yr=g.first_release_date?new Date(g.first_release_date*1000).getFullYear():"";
-    return `<div class="c" onclick="openGame(${g.id})"><div class="co"><img loading="lazy" src="${IMG(g.cover&&g.cover.image_id)}" onerror="this.style.opacity=0;this.parentNode.style.background='#222'">${add}</div><div class="nm" style="font-size:11px">${esc(g.name)}${yr?` <span style="color:var(--dim2)">· ${yr}</span>`:""}</div></div>`;
+    return `<div class="c" onclick="openGame(${g.id})"><div class="co"><img loading="lazy" src="${IMG(g.cover&&g.cover.image_id)}" onerror="this.style.opacity=0;this.parentNode.style.background='#222'">${add}</div><div class="nm" style="font-size:11px">${esc(g.name)}${yr?` <span style="color:var(--dim2)">· ${yr}</span>`:""}${dupName[g.name.toLowerCase().trim()]>1&&g.platforms&&g.platforms.length===1&&g.platforms[0].id===52?` <span style="color:var(--dim2)">· Arcade</span>`:""}</div></div>`;
   }).join("")||`<div class="mt">No results — try a different title.</div>`;
 }
 let CUR=null;
