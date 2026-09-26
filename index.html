@@ -648,7 +648,7 @@ function gameFromDet(det,shelf){
     platforms:(det.platforms||[]).map(p=>p.name),
     genres:(det.genres||[]).map(g=>g.name),
     gameType:det.game_type,
-    parent:det.version_parent||det.parent_game||null,   // the original this is a remake/port/version of — for family-aware "already owned" matching
+    parent:det.version_parent||null, vp:!!det.version_parent,   // same-game edition link only (region/port version). Remakes/remasters (parent_game) are DIFFERENT games and track separately.
     publisher:(det.involved_companies||[]).filter(c=>c.publisher&&c.company).map(c=>c.company.name)[0]||null,
     shelf,backlog:false,completed:false,nowPlaying:false,consoles:[],formats:{},sealed:false,myRating:null,hoursPlayed:null,completedDate:null,price:null,notes:"",addedDate:new Date().toISOString().slice(0,10)};
 }
@@ -1342,12 +1342,12 @@ const today=()=>new Date().toISOString().slice(0,10);
 // A game counts as owned if the library holds its exact id, its parent/original, or a sibling that shares the same parent.
 function famOwned(g){
   if(!g)return null;
-  const gid=g.id, gp=g.parent_game||g.version_parent||g.parent||null;
+  const gid=g.id, gp=g.version_parent||g.parent||null;   // remakes (parent_game) intentionally excluded
   return LIB.games.find(x=>
     x.igdbId===gid ||
     (gp&&x.igdbId===gp) ||           // result is a child; we own its original
-    (x.parent&&x.parent===gid) ||    // we own a child; result is the original
-    (gp&&x.parent&&x.parent===gp)    // both are siblings of the same original
+    (x.vp&&x.parent&&x.parent===gid) ||    // we own an edition; result is the original
+    (gp&&x.vp&&x.parent&&x.parent===gp)    // both are editions of the same original
   )||null;
 }
 function ownedGame(id){
@@ -1507,7 +1507,7 @@ async function loadCollection(id,det){
       const hasAnchor=!!(anchor&&(src.platforms||[]).some(p=>p.id===anchor.pid));
       items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
         released:src.first_release_date?new Date(src.first_release_date*1000).getFullYear():"",
-        parent:src.parent_game||src.version_parent||null,                  // so the roster owned-check is family-aware (own the ORIGINAL, member is a remaster/port)
+        parent:src.version_parent||null,                  // so the roster owned-check is family-aware (own the ORIGINAL, member is a remaster/port)
         plats:hasAnchor?[anchor.name]:(src.platforms||[]).map(x=>x.name),   // themed compilation: show the collection's console
         console:hasAnchor?anchor.name:null});                              // ...and tag it that console when tracked
     }
