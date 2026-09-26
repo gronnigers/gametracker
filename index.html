@@ -1307,13 +1307,15 @@ function openAdd(){
 async function doSearch(){
   const q=document.getElementById("q").value.trim();if(!q)return;
   document.getElementById("results").innerHTML=`<div class="mt">Searching…</div>`;
-  const raw=await igdb("games",`search "${q.replace(/"/g,'')}"; fields name,cover.image_id,first_release_date,total_rating,total_rating_count,platforms.id,parent_game,version_parent; where game_type=(0,3,4,8,9,10,11,13) & version_parent=null & cover!=null; limit 50;`);
+  const raw=await igdb("games",`search "${q.replace(/"/g,'')}"; fields name,cover.image_id,first_release_date,total_rating,total_rating_count,platforms.id,parent_game,version_parent; where game_type=(0,3,4,8,9,10,11,13) & version_parent=null; limit 200;`);
   const major=raw.filter(g=>(g.platforms||[]).some(p=>MAJOR.has(p.id)||TRACKED_PIDS.has(p.id)));
   const map={};
   // dedup same-named entries, but keep genuinely different releases apart (e.g. Ratchet & Clank PS2 2002 vs PS5 remake 2016):
   // key on name + release year so distinct-era games each survive; only true same-year duplicates (regional variants) collapse (highest rating count wins)
   major.forEach(g=>{const y=g.first_release_date?new Date(g.first_release_date*1000).getFullYear():"?";const k=g.name.toLowerCase().trim()+"|"+y;const c=g.total_rating_count||0;if(!map[k]||c>(map[k].total_rating_count||0))map[k]=g;});
-  const res=Object.values(map).sort((a,b)=>(b.total_rating_count||0)-(a.total_rating_count||0)).slice(0,30);
+  const qn=q.toLowerCase().trim(), rel=g=>{const n=g.name.toLowerCase().trim();return n===qn?3:n.startsWith(qn)?2:n.includes(qn)?1:0;};
+  // relevance first (exact > starts-with > contains), then popularity — so a title named exactly what you typed never gets buried
+  const res=Object.values(map).sort((a,b)=>(rel(b)-rel(a))||((b.total_rating_count||0)-(a.total_rating_count||0))).slice(0,48);
   document.getElementById("results").innerHTML=res.map(g=>{
     const owned=famOwned(g);
     const add=owned?`<span class="added">✓</span>`:`<button class="plus" data-gid="${g.id}" onclick="event.stopPropagation();chooseShelf(${g.id})" aria-label="Add">+</button>`;
