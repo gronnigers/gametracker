@@ -575,15 +575,15 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.16.0</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.15.1</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.16.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.15.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
-      <div class="rail"><h3>🎯 For you</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
+      <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail" id="wishRail"><h3>💜 Wishlist watch</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-wish',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-wish"></div><button class="railnav next" onclick="railScroll('r-wish',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail" id="tiwRail"><h3>🎮 This week in gaming</h3><div id="tiwBody"></div></div>
@@ -1014,7 +1014,7 @@ function candidate(g){return {igdbId:g.id,name:g.name,cover:g.cover&&g.cover.ima
 function discCard(g,tag){
   const t=tag?`<span class="tg ${tag==='Upcoming'?'up':'tr'}">${tag}</span>`:"";
   const owned=famOwned(g);
-  const sub=owned?"✓ in "+SHELF_LABEL[owned.shelf]:g._why?esc(g._why):(g.first_release_date?new Date(g.first_release_date*1000).toLocaleDateString(undefined,{month:'short',year:'numeric'}):"");
+  const sub=owned?"✓ in "+SHELF_LABEL[owned.shelf]:(g.first_release_date?new Date(g.first_release_date*1000).toLocaleDateString(undefined,{month:'short',year:'numeric'}):"");
   const addFn=tag==='Upcoming'?`quickWishlist(${g.id})`:`chooseShelf(${g.id})`;
   const add=owned?`<span class="added">✓</span>`:`<button class="plus" data-gid="${g.id}" onclick="event.stopPropagation();${addFn}" aria-label="Add">+</button>`;
   return `<div class="c" onclick="openGame(${g.id})">
@@ -1138,7 +1138,7 @@ function renderHero(){
     if(LIB.games.some(x=>x.igdbId===feat.id)) feat=(TREND||[]).concat(UPCOMING||[]).find(g=>!LIB.games.some(x=>x.igdbId===g.id))||FEAT;
     el.innerHTML=`<div class="bg"><img src="${IMG(feat.cover&&feat.cover.image_id,'t_1080p')}" onerror="this.onerror=null;this.src='${IMG(feat.cover&&feat.cover.image_id,'t_720p')}'"></div>
       <div class="grad"></div>
-      <div class="in"><div class="tag">🎯 Picked for you</div><h1>${esc(feat.name)}</h1>${feat._why?`<div style="color:#cfcfd6;font-size:14px;margin:-4px 0 12px">${esc(feat._why)}</div>`:""}
+      <div class="in"><div class="tag">🔥 Trending now</div><h1>${esc(feat.name)}</h1>
         <button class="primary" onclick="openGame(${feat.id})">+ Add to library</button></div>`;
   } else {
     el.innerHTML=`<div class="in"><div class="tag">Discover</div><h1>Find your next game</h1></div>`;
@@ -1147,7 +1147,7 @@ function renderHero(){
 function renderWheels(){
   const fresh=g=>!LIB.games.some(x=>x.igdbId===g.id);   // hide anything already tagged
   const t=document.getElementById("r-trend"), u=document.getElementById("r-up");
-  if(t&&TREND.length){const tl=TREND.filter(fresh);t.innerHTML=tl.map(g=>discCard(g,"For you")).join("");if(t.closest(".rail"))t.closest(".rail").style.display=tl.length?"":"none";}
+  if(t&&TREND.length){const tl=TREND.filter(fresh);t.innerHTML=tl.map(g=>discCard(g,"Trending")).join("");if(t.closest(".rail"))t.closest(".rail").style.display=tl.length?"":"none";}
   if(u&&UPCOMING.length){const ul=UPCOMING.filter(fresh);u.innerHTML=ul.map(g=>discCard(g,"Upcoming")).join("");if(u.closest(".rail"))u.closest(".rail").style.display=ul.length?"":"none";}
   startRoll("r-trend",1); startRoll("r-up",1);
 }
@@ -1217,19 +1217,18 @@ async function _renderDiscover(){
   const y3=now-94608000; // ~3 years
   const TYPES="game_type=(0,3,4,8,9,10,11,13)";
   const [trendRaw,upRaw,annRaw]=await Promise.all([
-    Promise.resolve([]),   /* generic Trending retired (v2.16.0) — the For You rail is built from your library by buildForYou() */
+    igdb("games",`fields name,cover.image_id,total_rating,first_release_date,platforms.id; where first_release_date>${y3} & first_release_date<${now} & total_rating_count>12 & cover!=null & ${TYPES}; sort total_rating_count desc; limit 100;`),
     igdb("games",`fields name,cover.image_id,first_release_date,hypes,platforms.name,platforms.id; where first_release_date>${now} & cover!=null & ${TYPES} & (hypes>=15 | (platforms=(130,508) & hypes>=8)); sort first_release_date asc; limit 500;`),
     igdb("games",`fields name,cover.image_id,first_release_date,total_rating_count; where first_release_date!=null & first_release_date<${now} & total_rating_count>40 & cover!=null & ${TYPES}; sort total_rating_count desc; limit 500;`)
   ]);
-  if(!upRaw.length&&!annRaw.length){                    // IGDB/Worker didn't answer — retry on its own instead of sticking blank
+  if(!trendRaw.length&&!upRaw.length){                    // IGDB/Worker didn't answer — retry on its own instead of sticking blank
     if(_discTries++<5)setTimeout(()=>renderDiscover(true),1500*_discTries);
     return;
   }
   _discTries=0;
-  UPCOMING=upRaw;   // upcoming stays in release-date order
+  TREND=nintFirst(trendRaw); UPCOMING=upRaw;   // upcoming stays in release-date order
   THISWEEK=thisWeekList(annRaw);
   FEAT=TREND[0]||UPCOMING[0]||null;
-  if(LIB_LOADED)renderForYou();                           // cached picks paint instantly; fresh ones compute in the background
   renderHero();
   renderWheels();
   renderThisWeek();
@@ -1838,112 +1837,6 @@ document.addEventListener("click",e=>{
   const add=e.target.closest("[data-act='add']"); if(add){openAdd();return;}
 });
 
-
-/* =========================================================================
-   🎯 For You (v2.16.0) — taste-based discovery that replaces generic Trending.
-   1) Profile: pull genres/themes/franchises/perspectives/developers/similar_games
-      for every library game from IGDB (cached per game for 14 days).
-      Weight each game: completed 3 · now playing 3.5 · wishlist 2.5 · backlog 2 ·
-      just owned 1 (× your ★ rating when set).
-   2) Candidates, any era: IGDB "similar_games" of the games you care about most
-      + acclaimed games (★78+, 60+ ratings) + well-rated recent releases (★75+,
-      15+ ratings, last 2 years) — only on consoles you own.
-   3) Shovelware gate: needs box art, a real game (main/standalone/remake/
-      remaster/expanded — no ports, bundles, editions), ★72+ with 15+ ratings,
-      no adult-only theme.
-   4) Score = taste match (genre > theme > perspective) + series you play +
-      developers you like + how many of your games point to it + quality +
-      popularity, with a little per-session shuffle. Max 2 per series.
-   Anything you own or wishlist — including remakes/remasters of it — is out.
-   ========================================================================= */
-const FY_PROF_KEY="gt_fy_prof", FY_RECS_KEY="gt_fy_recs", FY_PROF_TTL=14*864e5, FY_RECS_TTL=12*36e5;
-let _fyBusy=null;
-function fyLS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v));}catch(e){return null;}}
-function fySig(){return LIB.games.length+":"+LIB.games.filter(g=>g.completed).length+":"+LIB.games.filter(g=>g.backlog).length+":"+LIB.games.filter(g=>g.shelf==="wishlist").length;}
-function renderForYou(force){
-  const c=fyLS(FY_RECS_KEY);
-  if(c&&Array.isArray(c.list)&&c.list.length){TREND=c.list;if(!FEAT||!FEAT._why)FEAT=TREND[0];renderWheels();renderHero();}
-  const fresh=c&&c.sig===fySig()&&Date.now()-c.at<FY_RECS_TTL;
-  if(fresh&&!force)return;
-  if(_fyBusy)return _fyBusy;
-  _fyBusy=buildForYou().then(list=>{
-    if(list&&list.length){TREND=list;FEAT=list[0];fyLS(FY_RECS_KEY,{at:Date.now(),sig:fySig(),list});renderWheels();renderHero();}
-  }).catch(e=>console.warn("forYou",e)).finally(()=>{_fyBusy=null;});
-  return _fyBusy;
-}
-async function fyProfile(){
-  const cache=fyLS(FY_PROF_KEY)||{}, now=Date.now();
-  const need=LIB.games.map(g=>g.igdbId).filter(id=>id&&!(cache[id]&&now-cache[id].t<FY_PROF_TTL));
-  const F="fields id,genres,themes,franchises,player_perspectives,similar_games,platforms.id,platforms.name,involved_companies.company,involved_companies.developer,parent_game,version_parent;";
-  for(let i=0;i<need.length;i+=400){
-    const rows=await igdb("games",F+` where id=(${need.slice(i,i+400).join(",")}); limit 500;`);
-    rows.forEach(r=>{cache[r.id]={t:now,g:r.genres||[],th:r.themes||[],fr:r.franchises||[],pp:r.player_perspectives||[],sim:r.similar_games||[],
-      pl:(r.platforms||[]).map(p=>[p.id,p.name]),dev:(r.involved_companies||[]).filter(x=>x.developer&&x.company).map(x=>x.company),par:r.parent_game||r.version_parent||null};});
-  }
-  // keep the cache to games still in the library
-  const keep={};LIB.games.forEach(g=>{if(cache[g.igdbId])keep[g.igdbId]=cache[g.igdbId];});
-  fyLS(FY_PROF_KEY,keep);
-  return keep;
-}
-async function buildForYou(){
-  if(!LIB_LOADED||!LIB.games.length)return [];
-  const P=await fyProfile();
-  const T={g:{},th:{},fr:{},pp:{},dev:{}}, sim={}, why={}, myPlat=new Set(), ownIds=new Set(), ownFam=new Set();
-  const add=(m,k,w)=>{m[k]=(m[k]||0)+w;};
-  LIB.games.forEach(g=>{
-    ownIds.add(g.igdbId);if(g.parent)ownFam.add(g.parent);
-    const p=P[g.igdbId];if(!p)return;
-    if(p.par)ownFam.add(p.par);
-    let w=1;if(g.shelf==="wishlist")w=2.5;if(g.backlog)w=2;if(g.completed)w=3;if(g.nowPlaying)w=3.5;
-    if(g.myRating)w*=0.6+g.myRating/5*0.8;
-    p.g.forEach(x=>add(T.g,x,w));p.th.forEach(x=>add(T.th,x,w));p.fr.forEach(x=>add(T.fr,x,w));p.pp.forEach(x=>add(T.pp,x,w));p.dev.forEach(x=>add(T.dev,x,w));
-    if(g.shelf!=="wishlist"){
-      const cons=new Set(g.consoles||[]);
-      p.pl.forEach(([id,nm])=>{if(!cons.size||cons.has(nm))myPlat.add(id);});   // only consoles you actually own it on
-    }
-    if(w>=2)p.sim.forEach(s=>{add(sim,s,w);if(!why[s]||why[s][0]<w)why[s]=[w,g.name];});
-  });
-  const mx=o=>Math.max(1,...Object.values(o));
-  const N={g:mx(T.g),th:mx(T.th),pp:mx(T.pp)};
-  const plats=[...myPlat].join(",");if(!plats)return [];
-  const BASE="cover!=null & version_parent=null & game_type=(0,4,8,9,10)";
-  const nowS=Math.floor(Date.now()/1000);
-  const cand=new Set(Object.keys(sim).map(Number));
-  const pools=await Promise.all([
-    igdb("games",`fields id; where ${BASE} & platforms=(${plats}) & total_rating>=78 & total_rating_count>=60; sort total_rating_count desc; limit 500;`),
-    igdb("games",`fields id; where ${BASE} & platforms=(${plats}) & total_rating>=78 & total_rating_count>=60; sort total_rating_count desc; limit 500; offset 500;`),
-    igdb("games",`fields id; where ${BASE} & platforms=(${plats}) & first_release_date>${nowS-2*365*86400} & first_release_date<${nowS} & total_rating>=75 & total_rating_count>=15; sort total_rating_count desc; limit 300;`)
-  ]);
-  pools.flat().forEach(r=>cand.add(r.id));
-  ownIds.forEach(id=>cand.delete(id));
-  const ids=[...cand];let C=[];
-  const CF="fields id,name,cover.image_id,total_rating,total_rating_count,aggregated_rating,first_release_date,genres,themes,franchises,player_perspectives,platforms.id,platforms.name,involved_companies.company,involved_companies.developer,game_type,version_parent,parent_game;";
-  for(let i=0;i<ids.length;i+=450)C=C.concat(await igdb("games",CF+` where id=(${ids.slice(i,i+450).join(",")}); limit 500;`));
-  const share=(m,n,vals)=>vals&&vals.length?vals.reduce((a,x)=>a+(m[x]||0),0)/(n*vals.length):0;
-  const out=[];
-  C.forEach(c=>{
-    if(c.version_parent||!c.cover||![0,4,8,9,10].includes(c.game_type))return;
-    if(ownFam.has(c.id)||(c.parent_game&&(ownIds.has(c.parent_game)||ownFam.has(c.parent_game))))return;   // you own it, or a version of it
-    if(famOwned({id:c.id,parent:c.parent_game}))return;
-    if((c.themes||[]).includes(42))return;
-    if(!(c.platforms||[]).some(p=>myPlat.has(p.id)))return;
-    const rc=c.total_rating_count||0, rt=c.total_rating||c.aggregated_rating||0;
-    if(rc<15||rt<72)return;                                            // shovelware gate
-    const taste=1.6*share(T.g,N.g,c.genres)+1.0*share(T.th,N.th,c.themes)+0.6*share(T.pp,N.pp,c.player_perspectives);
-    const fr=(c.franchises||[]).some(x=>T.fr[x]);
-    const dv=(c.involved_companies||[]).some(x=>x.developer&&x.company&&(T.dev[x.company]||0)>=3);
-    const sc=taste+(fr?1.2:0)+(dv?0.5:0)+0.45*Math.log1p(sim[c.id]||0)+(rt-72)/28*1.1+Math.min(Math.log10(rc+1)/3,1)*0.6+Math.random()*0.35;
-    c._why=why[c.id]?`Because you like ${why[c.id][1]}`:fr?"More from a series you play":dv?"From a studio you like":"";
-    c._s=sc;c._fr=(c.franchises||[])[0]||null;out.push(c);
-  });
-  out.sort((a,b)=>b._s-a._s);
-  const perFr={},list=[];
-  for(const c of out){if(c._fr){perFr[c._fr]=(perFr[c._fr]||0)+1;if(perFr[c._fr]>2)continue;}
-    list.push({id:c.id,name:c.name,cover:c.cover,total_rating:c.total_rating,first_release_date:c.first_release_date,parent_game:c.parent_game||null,platforms:(c.platforms||[]).map(p=>({id:p.id,name:p.name})),_why:c._why});
-    if(list.length>=40)break;}
-  return list;
-}
-
 /* ---------------- boot ---------------- */
 let _libTries=0;
 async function bootLibrary(){
@@ -1952,8 +1845,7 @@ async function bootLibrary(){
   if(ok){
     _libTries=0;
     try{refreshAll();}catch(e){console.error("render",e);}
-    wishSynced=false;try{syncWishDates();}catch(e){}
-    try{renderForYou();}catch(e){}       // wishlist dates need the library, which may land after Home
+    wishSynced=false;try{syncWishDates();}catch(e){}       // wishlist dates need the library, which may land after Home
     return true;
   }
   _libTries++;
@@ -2030,10 +1922,9 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.16.0";
+const APP_VERSION="2.15.1";
 /* type: new | improved | fixed */
 const CHANGELOG=[
-  {v:"2.16.0",items:[["new","🎯 For You replaces Trending — picks based on what you’ve finished, your backlog, wishlist and ratings, from any era"],["new","Each pick says why (“Because you like Super Metroid”), and the top pick headlines Home"],["improved","Shovelware filtered out: real games only, well-reviewed, on consoles you own, never something you already have"],["fixed","Stats completion % now counts your backlog + finished games, not every game you own"]]},
   {v:"2.15.1",items:[["fixed","Home and Library load reliably on the first open — no more refreshing and clicking back and forth"],["fixed","If OneDrive or the games database is slow to answer, GameTrack keeps retrying on its own"],["improved","The browser-tab icon matches the random app icon"],["improved","Completed games get a green outline and a “✓ Completed” strip, like out-now Wishlist games"]]},
   {v:"2.15.0",items:[["new","Update notifications — GameTrack tells you when a new version is ready and updates in one tap"],["new","“What’s new” — after an update you see what changed, even if you skipped a few versions"],["new","Version, What’s new and Check for updates at the bottom of the sidebar (tap the version on iPhone Home)"],["improved","Works offline from cache if the network drops"]]},
   {v:"2.14.4",items:[["fixed","Remakes and remasters (ActRaiser vs ActRaiser Renaissance) are tracked as separate games"],["fixed","Search finds more games — Willow (arcade) no longer disappears behind the NES version"],["improved","Same-name games on different platforms get a label like “· Arcade”"]]},
