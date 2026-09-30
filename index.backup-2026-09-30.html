@@ -507,43 +507,6 @@
   .npbtn.seal.on{background:rgba(242,182,97,.16);border-color:var(--amber,#f2b661);color:var(--amber,#f2b661)}
   .sealchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2,#2a2a30);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--dim,#aaa);cursor:pointer}
   .sealchip.sel{background:rgba(242,182,97,.16);border-color:var(--amber,#f2b661);color:var(--amber,#f2b661)}
-
-  /* ---------- app updates: "Update ready" card + What's new (v2.15.0) ---------- */
-  .upd{position:fixed;z-index:190;left:50%;transform:translateX(-50%);bottom:calc(var(--sab,0px) + 96px);width:min(420px,calc(100vw - 24px));display:flex;align-items:center;gap:12px;
-    background:#0c0c0e;color:var(--txt);border:1.5px solid rgba(255,255,255,.85);padding:12px;border-radius:18px;
-    box-shadow:0 0 16px 0 rgba(255,255,255,.22),0 14px 36px rgba(0,0,0,.6);
-    animation:updIn .45s cubic-bezier(.2,.9,.25,1.15),updGlow 2.8s ease-in-out .5s infinite}
-  @keyframes updIn{from{transform:translate(-50%,18px);opacity:0}}
-  @keyframes updGlow{0%,100%{box-shadow:0 0 10px 0 rgba(255,255,255,.16),0 14px 36px rgba(0,0,0,.6)}50%{box-shadow:0 0 26px 3px rgba(255,255,255,.34),0 14px 36px rgba(0,0,0,.6)}}
-  @media (prefers-reduced-motion:reduce){.upd{animation:updIn .2s ease-out}}
-  .upd.out{transition:transform .25s ease,opacity .25s ease;transform:translate(-50%,14px);opacity:0;animation:none}
-  .upd-ic{width:40px;height:40px;border-radius:12px;background:#1a1a1e;color:#fff;display:grid;place-items:center;flex-shrink:0;font-size:20px}
-  .upd-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.25}
-  .upd-t b{font-weight:800;font-size:14.5px}
-  .upd-t span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .upd .later{all:unset;cursor:pointer;height:36px;padding:0 10px;border-radius:99px;font-size:13px;font-weight:600;color:var(--dim)}
-  @media(hover:hover){.upd .later:hover{color:#fff;background:#18181b}}
-  .upd .go{all:unset;cursor:pointer;height:36px;padding:0 16px;border-radius:99px;background:var(--accent);color:var(--accentTxt);font-weight:800;font-size:13.5px}
-  .upd .go:disabled{opacity:.6}
-  @media(min-width:768px){.upd{bottom:24px;left:calc(50% + 115px)}}
-  .wn-hero{display:flex;align-items:center;gap:14px;padding:4px 0 12px}
-  .wn-hero .upd-ic{width:50px;height:50px;border-radius:15px;font-size:26px}
-  .wn-hero b{display:block;font-size:20px;font-weight:800}
-  .wn-hero span{font-size:13px;color:var(--dim)}
-  .wn-group{display:flex;flex-direction:column;gap:8px;margin-top:8px}
-  .wn-group h4{margin:8px 0 0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:800;display:flex;align-items:center;gap:8px}
-  .wn-dot{width:8px;height:8px;border-radius:99px;background:#fff}
-  .wn-group.improved .wn-dot{background:var(--good)}.wn-group.fixed .wn-dot{background:var(--hot)}
-  .wn-item{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.45;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
-  .wn-item small{margin-left:auto;flex-shrink:0;font-size:11px;color:var(--dim2);padding-top:3px;white-space:nowrap}
-  .wn-foot{display:flex;gap:8px;margin-top:18px}
-  .wn-foot button{flex:1;border-radius:12px;padding:13px;font-weight:800;font-size:14px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--txt)}
-  .wn-foot button.pri{background:var(--accent);color:var(--accentTxt);border:0}
-  .sidever{margin-top:auto;padding:12px 11px 4px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim2);display:flex;flex-direction:column;gap:6px}
-  .sidever .row{display:flex;flex-direction:column;gap:6px}
-  .side .sidever a{display:block;padding:0;font-size:12px;background:none;white-space:nowrap}
-  .sidever a{color:var(--dim);cursor:pointer;font-weight:600}.sidever a:hover{color:#fff}
-  .vtag{cursor:pointer}
 </style>
   <link rel="apple-touch-icon" id="atIcon" href="icon-gamepad.png">
 </head>
@@ -575,13 +538,12 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.15.0</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.15.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub" style="font-size:9px;color:#2a2a30">v2.14.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -1820,7 +1782,6 @@ document.addEventListener("click",e=>{
     await loadLibrary();
     refreshAll();
     renderDiscover();
-    if(typeof maybeShowWhatsNew==="function")maybeShowWhatsNew(); else window.addEventListener("load",()=>maybeShowWhatsNew());
   }else{showAuth();}
 })();
 </script>
@@ -1862,106 +1823,6 @@ document.addEventListener("click",e=>{
   pick.addEventListener('click',e=>{const b=e.target.closest('.pk');if(!b)return;e.stopPropagation();apply(b.dataset.k);setHome(b.dataset.k);pick.classList.remove('open');});
   document.addEventListener('click',e=>{if(!btn.contains(e.target)&&!pick.contains(e.target))pick.classList.remove('open');});
 })();
-</script>
-
-<script>
-/* =========================================================================
-   App updates (v2.15.0) — same pattern as Dwellness.
-   Every release: bump APP_VERSION here AND VERSION in sw.js, and add a
-   CHANGELOG entry (newest first). A new sw.js on GitHub Pages installs and
-   WAITS → "Update ready" card → tap Update → saves pending edits → the new
-   worker activates → page reloads → "What's new" shows everything since the
-   version this device last saw.
-   ========================================================================= */
-const APP_VERSION="2.15.0";
-/* type: new | improved | fixed */
-const CHANGELOG=[
-  {v:"2.15.0",items:[["new","Update notifications — GameTrack tells you when a new version is ready and updates in one tap"],["new","“What’s new” — after an update you see what changed, even if you skipped a few versions"],["new","Version, What’s new and Check for updates at the bottom of the sidebar (tap the version on iPhone Home)"],["improved","Works offline from cache if the network drops"]]},
-  {v:"2.14.4",items:[["fixed","Remakes and remasters (ActRaiser vs ActRaiser Renaissance) are tracked as separate games"],["fixed","Search finds more games — Willow (arcade) no longer disappears behind the NES version"],["improved","Same-name games on different platforms get a label like “· Arcade”"]]},
-  {v:"2.14.3",items:[["fixed","Collection rosters show games as Owned when you own the original (Super Mario All-Stars, Metroid Prime Trilogy)"]]},
-  {v:"2.14.2",items:[["improved","Stats › By console lists every console you own, not just the top 7"]]},
-  {v:"2.14.1",items:[["fixed","Search keeps same-name games from different eras (Ratchet & Clank 2002, 2012 and 2016 all show)"],["improved","Search results show the release year"]]},
-  {v:"2.14.0",items:[["new","Themed collections (like Sega Genesis Classics) pin every game to that console, and + Track tags it correctly"]]}
-];
-let swReg=null,updWorker=null,gtReloading=false;
-const GT_SEEN="gt_seen_version";
-const verKey=v=>String(v||"").split(/[.\-]/).map(n=>parseInt(n,10)||0);
-function cmpVer(a,b){const x=verKey(a),y=verKey(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d;}return 0;}
-const escH=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function askVersion(w){return new Promise(res=>{try{const ch=new MessageChannel();ch.port1.onmessage=e=>res(e.data);w.postMessage("GET_VERSION",[ch.port2]);setTimeout(()=>res(null),1500);}catch(e){res(null);}});}
-async function onWaiting(w){
-  if(!w||!navigator.serviceWorker.controller)return;
-  const v=await askVersion(w);
-  if(v&&v===APP_VERSION){w.postMessage("SKIP_WAITING");return;} // page already loaded the new code (network-first) — activate quietly
-  updWorker=w;showUpdateBanner(v);
-}
-function showUpdateBanner(v){
-  if(document.getElementById("upd"))return;
-  const el=document.createElement("div");el.className="upd";el.id="upd";el.setAttribute("role","status");
-  el.innerHTML=`<span class="upd-ic">🎮</span><div class="upd-t"><b>Update ready</b><span>${v?`Version ${escH(v)}`:"A new version of GameTrack"}</span></div><button class="later" data-upd="later">Later</button><button class="go" data-upd="go">Update</button>`;
-  document.body.appendChild(el);
-  el.addEventListener("click",ev=>{
-    const b=ev.target.closest("[data-upd]");if(!b)return;
-    if(b.dataset.upd==="later"){el.classList.add("out");setTimeout(()=>el.remove(),260);return;}
-    applyUpdate(b);
-  });
-}
-async function applyUpdate(btn){
-  if(btn){btn.disabled=true;btn.textContent="Updating…";}
-  // flush any pending library save so nothing is lost across the reload
-  try{if(typeof saveTimer!=="undefined"&&saveTimer){clearTimeout(saveTimer);saveTimer=null;await saveLibrary();}}catch(e){}
-  if(updWorker)updWorker.postMessage("SKIP_WAITING");else location.reload();
-}
-async function checkForUpdate(manual){
-  if(!swReg){if(manual)toast("Updates aren’t available in this browser");return;}
-  try{await swReg.update();}catch(e){}
-  if(swReg.waiting)onWaiting(swReg.waiting);
-  else if(manual)setTimeout(()=>{if(!swReg.waiting&&!swReg.installing)toast(`You’re up to date · v${APP_VERSION}`);},1200);
-}
-function initUpdates(){
-  document.querySelectorAll(".appver").forEach(e=>e.textContent="v"+APP_VERSION);
-  if(!("serviceWorker" in navigator))return;
-  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(gtReloading)return;gtReloading=true;location.reload();});
-  navigator.serviceWorker.register("sw.js").then(reg=>{
-    swReg=reg;
-    if(reg.waiting)onWaiting(reg.waiting);
-    reg.addEventListener("updatefound",()=>{const w=reg.installing;if(!w)return;w.addEventListener("statechange",()=>{if(w.state==="installed")onWaiting(w);});});
-    setInterval(()=>checkForUpdate(false),15*60e3);
-    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkForUpdate(false);});
-  }).catch(()=>{});
-}
-function showWhatsNew(fromVer,manual){
-  const entries=CHANGELOG.filter(e=>cmpVer(e.v,APP_VERSION)<=0&&(fromVer?cmpVer(e.v,fromVer)>0:true)).slice(0,fromVer?undefined:(manual?3:1));
-  if(!entries.length){if(manual)toast("No release notes yet");return;}
-  const multi=entries.length>1;
-  const groups={new:[],improved:[],fixed:[]};
-  entries.forEach(e=>e.items.forEach(([t,txt])=>(groups[t]||groups.improved).push({txt,v:e.v})));
-  const label={new:"New",improved:"Improved",fixed:"Fixed"};
-  const sub=fromVer&&multi?`${entries.length} updates since v${fromVer}`:`Version ${entries[0].v}`;
-  modal(`<div class="wn-hero"><span class="upd-ic">🎮</span><div><b>${fromVer?"You’re up to date":"What’s new"}</b><span>${escH(sub)}</span></div></div>
-    ${["new","improved","fixed"].filter(k=>groups[k].length).map(k=>`<div class="wn-group ${k}"><h4><span class="wn-dot"></span>${label[k]}</h4>${groups[k].map(it=>`<div class="wn-item"><span>${escH(it.txt)}</span>${multi?`<small>v${escH(it.v)}</small>`:""}</div>`).join("")}</div>`).join("")}
-    <div class="wn-foot">${manual?`<button data-wn="check">Check for updates</button>`:""}<button class="pri" data-wn="close">Got it</button></div>`);
-  const top=document.getElementById("modalRoot").lastElementChild;
-  top.addEventListener("click",e=>{const b=e.target.closest("[data-wn]");if(!b)return;e.stopPropagation();closeModal();if(b.dataset.wn==="check")checkForUpdate(true);});
-}
-function maybeShowWhatsNew(){
-  let seen=localStorage.getItem(GT_SEEN);
-  if(!seen){
-    // first time this device sees release notes: if the app was already in use, treat it as an update from the previous release
-    const used=localStorage.getItem("gt_tok")||localStorage.getItem("gt_ref");
-    if(!used){localStorage.setItem(GT_SEEN,APP_VERSION);return;}
-    const prev=CHANGELOG.find(e=>cmpVer(e.v,APP_VERSION)<0);seen=prev?prev.v:APP_VERSION;
-  }
-  if(cmpVer(seen,APP_VERSION)>=0)return;
-  localStorage.setItem(GT_SEEN,APP_VERSION);
-  setTimeout(()=>{if(!document.getElementById("modalRoot").lastElementChild)showWhatsNew(seen);},900);
-}
-document.addEventListener("click",e=>{
-  const a=e.target.closest("[data-act='whatsnew'],[data-act='checkupdate']");if(!a)return;
-  e.preventDefault();e.stopPropagation();
-  if(a.dataset.act==="whatsnew")showWhatsNew(null,true);else checkForUpdate(true);
-},true);
-initUpdates();
 </script>
 </body>
 </html>
