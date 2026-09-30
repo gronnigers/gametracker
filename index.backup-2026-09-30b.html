@@ -541,7 +541,7 @@
   .wn-foot button.pri{background:var(--accent);color:var(--accentTxt);border:0}
   .sidever{margin-top:auto;padding:12px 11px 4px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim2);display:flex;flex-direction:column;gap:6px}
   .sidever .row{display:flex;flex-direction:column;gap:6px}
-  .side .sidever a{display:block;padding:0!important;margin:0!important;gap:0;font-size:12px;background:none;white-space:nowrap}
+  .side .sidever a{display:block;padding:0;font-size:12px;background:none;white-space:nowrap}
   .sidever a{color:var(--dim);cursor:pointer;font-weight:600}.sidever a:hover{color:#fff}
   .vtag{cursor:pointer}
 </style>
@@ -575,13 +575,13 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.15.1</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.15.0</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.15.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.15.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🔥 Trending</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -746,42 +746,28 @@ async function gF(url,opts={}){
   const tok=accessToken||localStorage.getItem('gt_tok');
   if(!tok){showAuth();return null;}
   accessToken=tok;
-  let res;
-  try{res=await fetch('https://graph.microsoft.com/v1.0'+url,{...opts,headers:{Authorization:'Bearer '+accessToken,...(opts.headers||{})}});}
-  catch(e){await new Promise(s=>setTimeout(s,800));
-    try{res=await fetch('https://graph.microsoft.com/v1.0'+url,{...opts,headers:{Authorization:'Bearer '+accessToken,...(opts.headers||{})}});}catch(e2){return null;}}
+  const res=await fetch('https://graph.microsoft.com/v1.0'+url,
+    {...opts,headers:{Authorization:'Bearer '+accessToken,...(opts.headers||{})}});
   if(res.status===401){if(await refreshToken())return gF(url,opts);signOut();return null;}
   return res;
 }
 
 /* ---------------- IGDB (array-safe) ---------------- */
-async function igdb(endpoint,query,_try=0){
+async function igdb(endpoint,query){
   try{
-    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),15000);
-    const r=await fetch(CONFIG.WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint,query}),signal:ctl.signal});
-    clearTimeout(to);
-    if(!r.ok)throw new Error('igdb '+r.status);
+    const r=await fetch(CONFIG.WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint,query})});
+    if(!r.ok)return [];
     const j=await r.json();
     return Array.isArray(j)?j:[];
-  }catch(e){
-    if(_try<1){await new Promise(s=>setTimeout(s,700));return igdb(endpoint,query,_try+1);}  // cold Worker / blip → retry once
-    return [];
-  }
+  }catch(e){return [];}
 }
 
 /* ---------------- Library load / save ---------------- */
-let LIB_LOADED=false;   // true only once library.json was really read — guards saves so a failed load can never overwrite it with an empty list
 async function loadLibrary(){
-  let r=null;
-  for(let i=0;i<3;i++){                                   // up to 3 tries with backoff on transient errors
-    r=await gF(LIB_PATH+':/content');
-    if(r&&(r.ok||r.status===404))break;
-    await new Promise(s=>setTimeout(s,600*(i+1)));
-  }
-  if(r&&r.ok){try{LIB=await r.json();}catch(e){return false;}}
-  else if(r&&r.status===404){LIB={version:1,updated:null,games:[]};LIB_LOADED=true;await saveLibrary();}
-  else return false;                                      // couldn't reach OneDrive — caller retries; LIB untouched
-  LIB_LOADED=true;
+  let r=await gF(LIB_PATH+':/content');
+  if(r&&!r.ok&&r.status!==404){await new Promise(s=>setTimeout(s,500));r=await gF(LIB_PATH+':/content');}  // one retry on a transient error so a hiccup doesn't leave the app blank
+  if(r&&r.ok){try{LIB=await r.json();}catch(e){LIB={version:1,updated:null,games:[]};}}
+  else if(r&&r.status===404){LIB={version:1,updated:null,games:[]};await saveLibrary();}
   LIB.games=LIB.games||[];
   // migrate: "completed" used to be a shelf; it's now a status any game can carry
   LIB.games.forEach(g=>{
@@ -797,11 +783,9 @@ async function loadLibrary(){
     if(g.nowPlaying==null)g.nowPlaying=false;
     if(g.shelf==="wishlist"){g.backlog=false;g.completed=false;g.nowPlaying=false;}  // don't own it yet
   });
-  return true;
 }
 let saveTimer=null;
 async function saveLibrary(){
-  if(!LIB_LOADED)return;                                   // never write before a successful load
   LIB.updated=new Date().toISOString();
   await gF(LIB_PATH+':/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(LIB,null,2)});
 }
@@ -845,8 +829,7 @@ function libCard(g){
     }
   }
   else l2=`<div class="mt">${consoleList(g).slice(0,2).join(" · ")}${g.backlog?' · <span style="color:#8fd0ff">⏳</span>':''}</div>`;
-  const done="";
-  if(g.completed){wsClass=" ws-now ws-done";wtag=`<div class="wtag now">✓ COMPLETED</div>`;}
+  const done=g.completed?`<span class="tg done">✓</span>`:"";
   const dup=g.copies?Math.max(1,...Object.values(g.copies)):1;
   const badges=`${isColl(g)?'<span class="colltag">📦</span>':""}${dup>1?`<span class="dupe">×${dup}</span>`:""}`;
   // sealed = shrink-wrap treatment (static sheen + folded plastic corner + SEALED tag)
@@ -1202,15 +1185,9 @@ function openUpcoming(){
   modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><h2 style="padding-right:34px">📅 Upcoming releases</h2>${body}`);
 }
 let discoverLoaded=false;
-let _discP=null,_discTries=0;
-function renderDiscover(force){
+async function renderDiscover(force){
   renderRecentRail();
-  if(discoverLoaded&&!force)return Promise.resolve();
-  if(_discP)return _discP;                                  // already loading — don't double-fire
-  _discP=_renderDiscover().finally(()=>{_discP=null;});
-  return _discP;
-}
-async function _renderDiscover(){
+  if(discoverLoaded&&!force)return;
   const now=Math.floor(Date.now()/1000);
   const y3=now-94608000; // ~3 years
   const TYPES="game_type=(0,3,4,8,9,10,11,13)";
@@ -1219,11 +1196,6 @@ async function _renderDiscover(){
     igdb("games",`fields name,cover.image_id,first_release_date,hypes,platforms.name,platforms.id; where first_release_date>${now} & cover!=null & ${TYPES} & (hypes>=15 | (platforms=(130,508) & hypes>=8)); sort first_release_date asc; limit 500;`),
     igdb("games",`fields name,cover.image_id,first_release_date,total_rating_count; where first_release_date!=null & first_release_date<${now} & total_rating_count>40 & cover!=null & ${TYPES}; sort total_rating_count desc; limit 500;`)
   ]);
-  if(!trendRaw.length&&!upRaw.length){                    // IGDB/Worker didn't answer — retry on its own instead of sticking blank
-    if(_discTries++<5)setTimeout(()=>renderDiscover(true),1500*_discTries);
-    return;
-  }
-  _discTries=0;
   TREND=nintFirst(trendRaw); UPCOMING=upRaw;   // upcoming stays in release-date order
   THISWEEK=thisWeekList(annRaw);
   FEAT=TREND[0]||UPCOMING[0]||null;
@@ -1836,24 +1808,6 @@ document.addEventListener("click",e=>{
 });
 
 /* ---------------- boot ---------------- */
-let _libTries=0;
-async function bootLibrary(){
-  let ok=false;
-  try{ok=await loadLibrary();}catch(e){ok=false;}
-  if(ok){
-    _libTries=0;
-    try{refreshAll();}catch(e){console.error("render",e);}
-    wishSynced=false;try{syncWishDates();}catch(e){}       // wishlist dates need the library, which may land after Home
-    return true;
-  }
-  _libTries++;
-  if(_libTries===2)toast("Can't reach OneDrive — retrying…");
-  setTimeout(bootLibrary,Math.min(2000*_libTries,15000)); // keep trying on its own; no manual refresh needed
-  return false;
-}
-// coming back to a tab that was left open: refresh the token-dependent library if it never loaded
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&!LIB_LOADED&&!document.getElementById("app").classList.contains("hidden"))bootLibrary();});
-
 (async function init(){
   if(CONFIG.CLIENT_ID.startsWith("PASTE")){showAuth();document.getElementById("setupNote").classList.remove("hidden");return;}
   wireLibrary();
@@ -1862,9 +1816,10 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
     showApp();
     // proactively mint a fresh access token before the first load — the stored one is often expired (~1h),
     // which otherwise makes the first OneDrive read 401 and the app look blank until a manual refresh
-    if(!cameBack&&localStorage.getItem('gt_ref')){try{await refreshToken();}catch(e){}}
-    renderDiscover();                                     // IGDB rails don't depend on OneDrive — start now, in parallel
-    await bootLibrary();
+    if(!cameBack&&localStorage.getItem('gt_ref'))await refreshToken();
+    await loadLibrary();
+    refreshAll();
+    renderDiscover();
     if(typeof maybeShowWhatsNew==="function")maybeShowWhatsNew(); else window.addEventListener("load",()=>maybeShowWhatsNew());
   }else{showAuth();}
 })();
@@ -1897,9 +1852,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
   function setHome(k){home=k;try{localStorage.setItem('gt_homeicon',k);}catch(e){}
     atLink().href='icon-'+k+'.png';
     pick.querySelectorAll('.pk').forEach(b=>b.classList.toggle('home',b.dataset.k===home));}
-  function favLink(){let l=document.getElementById('favIcon');
-    if(!l){l=document.createElement('link');l.rel='icon';l.type='image/png';l.id='favIcon';document.head.appendChild(l);}return l;}
-  function apply(k){img.src=APPICONS[k];img.dataset.k=k;favLink().href=APPICONS[k];   // browser-tab icon matches the in-app logo
+  function apply(k){img.src=APPICONS[k];img.dataset.k=k;
     pick.querySelectorAll('.pk').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));}
   pick.innerHTML='<div class="pktip">Tap to set your icon \u2014 it becomes your Home Screen icon too</div>'+
     KEYS.map(k=>'<button class="pk" data-k="'+k+'" title="'+k+'"><img src="'+APPICONS[k]+'" alt="'+k+'"></button>').join('');
@@ -1920,10 +1873,9 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.15.1";
+const APP_VERSION="2.15.0";
 /* type: new | improved | fixed */
 const CHANGELOG=[
-  {v:"2.15.1",items:[["fixed","Home and Library load reliably on the first open — no more refreshing and clicking back and forth"],["fixed","If OneDrive or the games database is slow to answer, GameTrack keeps retrying on its own"],["improved","The browser-tab icon matches the random app icon"],["improved","Completed games get a green outline and a “✓ Completed” strip, like out-now Wishlist games"]]},
   {v:"2.15.0",items:[["new","Update notifications — GameTrack tells you when a new version is ready and updates in one tap"],["new","“What’s new” — after an update you see what changed, even if you skipped a few versions"],["new","Version, What’s new and Check for updates at the bottom of the sidebar (tap the version on iPhone Home)"],["improved","Works offline from cache if the network drops"]]},
   {v:"2.14.4",items:[["fixed","Remakes and remasters (ActRaiser vs ActRaiser Renaissance) are tracked as separate games"],["fixed","Search finds more games — Willow (arcade) no longer disappears behind the NES version"],["improved","Same-name games on different platforms get a label like “· Arcade”"]]},
   {v:"2.14.3",items:[["fixed","Collection rosters show games as Owned when you own the original (Super Mario All-Stars, Metroid Prime Trilogy)"]]},
