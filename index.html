@@ -575,13 +575,13 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.17.3</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.17.4</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.4</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🎯 For you</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -938,7 +938,7 @@ function setSort(field){const cur=getSort(currentShelf);libSort[currentShelf]={f
 function setSortDir(dir){const cur=getSort(currentShelf);libSort[currentShelf]={field:cur.field,dir};renderLibrary();refreshSortSheet();}
 function renderLibrary(){
   document.getElementById("segs").innerHTML=SEGMENTS.map(s=>
-    `<button class="segbtn ${s===currentShelf?'on':''}" data-s="${s}"><span>${SHELF_LABEL[s]}</span><span class="segct">${by(s).length}</span></button>`).join("");
+    `<button class="segbtn ${s===currentShelf?'on':''}" data-s="${s}"><span>${SHELF_LABEL[s]}</span><span class="segct">${(libFilterActive()||(libFilter.q||"").trim())?applyFilters(by(s).slice()).length:by(s).length}</span></button>`).join("");
   document.getElementById("mtoggle").innerHTML=toggleHTML();
   document.getElementById("dtoggle").innerHTML=toggleHTML();
   ["msearch","dsearch"].forEach(id=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=libFilter.q||"";});  // sync search box to state without stealing focus mid-type
@@ -2159,9 +2159,10 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.17.3";
+const APP_VERSION="2.17.4";
 /* type: new | improved | fixed */
 const CHANGELOG=[
+  {v:"2.17.4",items:[["improved","Shelf counts (Collection, Backlog, Completed, Wishlist) follow your active filter and search"]]},
   {v:"2.17.3",items:[["fixed","Library filters stay on when you switch between Collection, Backlog, Completed and Wishlist"],["improved","The console filter works on the Wishlist too, by the console a game is coming to"]]},
   {v:"2.17.2",items:[["fixed","Collections count a remastered game as owned when you own the original — e.g. Super Mario All-Stars reads Owned for your NES Mario games, with the console you own it on"],["improved","North America first: Japan-only console names (Famicom, Super Famicom…) are hidden whenever the US console is listed"]]},
   {v:"2.17.1",items:[["fixed","Search finds re-releases on other consoles — like the Wii Super Mario All-Stars — and tracks them as their own game"],["fixed","Search hides fan games and junk: unrated PC / web-browser fan projects and entries with no box art"]]},
