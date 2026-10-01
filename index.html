@@ -575,13 +575,13 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.17.1</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.17.2</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.1</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🎯 For you</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -692,7 +692,11 @@ function gameFromDet(det,shelf){
 }
 function ignUrl(name){return "https://www.ign.com/search?q="+encodeURIComponent(name);}
 function ytUrl(name){return "https://www.youtube.com/results?search_query="+encodeURIComponent((name||"")+" review")+"&sp=CAMSAhAB";}
-function consoleList(g){return (g&&g.consoles&&g.consoles.length)?g.consoles:((g&&g.platforms)||[]);}
+/* North America first: IGDB tags many games with both the NA and JP console (SNES + Super Famicom).
+   Hide the Japan-only names whenever a non-JP console is also listed. */
+const JP_PLATS=new Set(["Family Computer","Family Computer Disk System","Super Famicom","Satellaview","Nintendo 64DD","PC-8800 Series","PC-9800 Series","Sharp X68000","FM Towns","Sharp X1","PC-FX"]);
+function naNames(list){const l=(list||[]).map(p=>p&&p.name?p.name:p);const na=l.filter(n=>!JP_PLATS.has(n));return na.length?na:l;}
+function consoleList(g){return (g&&g.consoles&&g.consoles.length)?g.consoles:naNames((g&&g.platforms)||[]);}
 function betaHours(sec){return sec?Math.round(sec/3600):null;}
 
 /* ---------------- PKCE OAuth ---------------- */
@@ -1174,7 +1178,7 @@ function shortPlat(name){
   return M[name]||name;
 }
 function platLine(g){
-  const ns=(g.platforms||[]).map(p=>shortPlat(p.name||p)).filter(Boolean);
+  const ns=naNames(g.platforms||[]).map(shortPlat).filter(Boolean);
   const uniq=[...new Set(ns)];
   return uniq.length?uniq.slice(0,4).join(" · ")+(uniq.length>4?" +"+(uniq.length-4):""):"";
 }
@@ -1700,7 +1704,8 @@ async function loadCollection(id,det){
       items.push({id:src.id,name:src.name,cover:(src.cover&&src.cover.image_id)||(m.cover&&m.cover.image_id),
         released:src.first_release_date?new Date(src.first_release_date*1000).getFullYear():"",
         parent:src.version_parent||null,                  // so the roster owned-check is family-aware (own the ORIGINAL, member is a remaster/port)
-        plats:hasAnchor?[anchor.name]:(src.platforms||[]).map(x=>x.name),   // themed compilation: show the collection's console
+        orig:(src.game_type===9||src.game_type===11)?(src.parent_game||null):null,   // remaster/port of an original you may own (All-Stars SNES → NES)
+        plats:hasAnchor?[anchor.name]:naNames(src.platforms||[]),   // themed compilation: show the collection's console
         console:hasAnchor?anchor.name:null});                              // ...and tag it that console when tracked
     }
     items.sort((a,b)=>(a.released||9999)-(b.released||9999));
@@ -1709,16 +1714,20 @@ async function loadCollection(id,det){
   if(!(CUR&&CUR.id===id))return;
   renderCollArea(id,items);
 }
+function rosterOwned(m){
+  return famOwned({id:m.id,parent:m.parent})||(m.orig?LIB.games.find(x=>x.igdbId===m.orig)||null:null);
+}
 function renderCollArea(id,items){
   const box=mEl("collArea"); if(!box)return;
   if(!items.length){box.innerHTML=`<div class="mt" style="color:var(--dim2);font-size:12px">No sub-games listed for this collection in IGDB.</div>`;return;}
-  const played=items.filter(m=>{const o=famOwned({id:m.id,parent:m.parent});return o&&o.completed;}).length;
+  const played=items.filter(m=>{const o=rosterOwned(m);return o&&o.completed;}).length;
   const pct=Math.round(played/items.length*100);
   const ring=`<div class="cring" style="background:conic-gradient(var(--good) ${pct}%,#22222a 0)"><i>${played}/${items.length}</i></div>`;
   const rows=items.map(m=>{
-    const o=famOwned({id:m.id,parent:m.parent}); let cls,chip;
-    if(o&&o.completed){cls="done";chip='<span class="cst done">✓ Played</span>';}
-    else if(o){cls="own";chip='<span class="cst own">● Owned</span>';}
+    const o=rosterOwned(m); let cls,chip;
+    const via=o&&o.igdbId!==m.id&&(o.consoles||[]).length?` <small style="opacity:.7">${esc(shortPlat(o.consoles[0]))}</small>`:"";   // owned as a different release (e.g. your NES copy)
+    if(o&&o.completed){cls="done";chip=`<span class="cst done">✓ Played${via}</span>`;}
+    else if(o){cls="own";chip=`<span class="cst own">● Owned${via}</span>`;}
     else {cls="add";chip=`<button class="cst add" onclick="event.stopPropagation();trackMember(${m.id})">+ Track</button>`;}
     const cv=m.cover?`<img loading="lazy" src="${IMG(m.cover)}" onerror="this.style.opacity=0">`:"";
     const sub=[(m.plats||[]).map(shortPlat).slice(0,2).join(" · "),m.released].filter(Boolean).join(" · ");
@@ -1728,7 +1737,7 @@ function renderCollArea(id,items){
 }
 async function trackMember(mid){
   const item=(CUR&&COLL_CACHE[CUR.id]||[]).find(x=>x.id===mid);
-  if(famOwned({id:mid,parent:item&&item.parent})){toast("Already in your library");return;}
+  if(item?rosterOwned(item):famOwned({id:mid})){toast("Already in your library");return;}
   const arr=await igdb("games",DETAIL_FIELDS+` where id=${mid};`);
   const d=arr[0]; if(!d){toast("Couldn't add that one");return;}
   const g=gameFromDet(d,"collection"); g.shelf="collection";
@@ -2150,9 +2159,10 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.17.1";
+const APP_VERSION="2.17.2";
 /* type: new | improved | fixed */
 const CHANGELOG=[
+  {v:"2.17.2",items:[["fixed","Collections count a remastered game as owned when you own the original — e.g. Super Mario All-Stars reads Owned for your NES Mario games, with the console you own it on"],["improved","North America first: Japan-only console names (Famicom, Super Famicom…) are hidden whenever the US console is listed"]]},
   {v:"2.17.1",items:[["fixed","Search finds re-releases on other consoles — like the Wii Super Mario All-Stars — and tracks them as their own game"],["fixed","Search hides fan games and junk: unrated PC / web-browser fan projects and entries with no box art"]]},
   {v:"2.17.0",items:[["new","Upcoming shows only games coming to consoles you own, and each card says which ones (PS5 · Switch 2)"],["new","🎯 Upcoming games that match your taste or a series you play are badged and float to the front"],["fixed","Honest release dates — no more fake countdowns to Dec 31. Vague dates read Nov 2026, Q1 2027, 2027 or TBA"],["improved","Wishlist countdowns use the same honest dates"]]},
   {v:"2.16.0",items:[["new","🎯 For You replaces Trending — picks based on what you’ve finished, your backlog, wishlist and ratings, from any era"],["new","Each pick says why (“Because you like Super Metroid”), and the top pick headlines Home"],["improved","Shovelware filtered out: real games only, well-reviewed, on consoles you own, never something you already have"],["fixed","Stats completion % now counts your backlog + finished games, not every game you own"]]},
