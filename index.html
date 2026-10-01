@@ -544,6 +544,8 @@
   .side .sidever a{display:block;padding:0!important;margin:0!important;gap:0;font-size:12px;background:none;white-space:nowrap}
   .sidever a{color:var(--dim);cursor:pointer;font-weight:600}.sidever a:hover{color:#fff}
   .vtag{cursor:pointer}
+  .bar2.clk{cursor:pointer;border-radius:8px}
+  @media(hover:hover){.bar2.clk:hover{background:#141418}.bar2.clk:hover .lbl{color:#fff}}
 </style>
   <link rel="apple-touch-icon" id="atIcon" href="icon-gamepad.png">
 </head>
@@ -575,13 +577,13 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.17.4</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.17.5</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.4</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.5</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🎯 For you</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -886,11 +888,12 @@ function listRow(g){
 /* ---------------- Library view ---------------- */
 function toggleHTML(){const m=libMode[currentShelf]||"grid";
   return `<button data-m="grid" class="${m==='grid'?'on':''}">▦</button><button data-m="table" class="${m==='table'?'on':''}">☰</button>`;}
-function libFilterActive(){return !!(libFilter.console||libFilter.year||libFilter.type||libFilter.pub||libFilter.sealed);}
+function libFilterActive(){return !!(libFilter.console||libFilter.genre||libFilter.year||libFilter.type||libFilter.pub||libFilter.sealed);}
 function applyFilters(arr){
   const q=(libFilter.q||"").trim().toLowerCase();
   if(q)arr=arr.filter(g=>((g.name||"")+" "+consoleList(g).join(" ")+" "+((g.genres||[]).join(" "))+" "+(g.publisher||"")).toLowerCase().includes(q));
-  if(libFilter.console)arr=arr.filter(g=>consoleList(g).includes(libFilter.console));   // wishlist games have no owned console → match the console they release on
+  if(libFilter.console)arr=arr.filter(g=>libFilter.console===NOCON?!(g.consoles||[]).length&&g.shelf!=="wishlist":g.shelf==="wishlist"?consoleList(g).includes(libFilter.console):(g.consoles||[]).includes(libFilter.console));   // owned = consoles you tagged; wishlist = release consoles   // wishlist games have no owned console → match the console they release on
+  if(libFilter.genre)arr=arr.filter(g=>(g.genres||[]).includes(libFilter.genre));
   if(libFilter.year)arr=arr.filter(g=>(g.released||"").slice(0,4)===libFilter.year);
   if(libFilter.type)arr=arr.filter(g=>gtLabel(g.gameType)===libFilter.type);
   if(libFilter.pub)arr=arr.filter(g=>(g.publisher||"")===libFilter.pub);
@@ -958,17 +961,20 @@ function openFilters(){
   const uniq=a=>[...new Set(a)].filter(Boolean);
   const consoles=uniq(all.flatMap(g=>consoleList(g)).concat(libFilter.console?[libFilter.console]:[])).sort();
   const years=uniq(all.map(g=>(g.released||"").slice(0,4))).sort().reverse();
+  const genres=uniq(all.flatMap(g=>g.genres||[]).concat(libFilter.genre?[libFilter.genre]:[])).sort();
   const types=uniq(all.map(g=>gtLabel(g.gameType)));
   const pubs=uniq(all.map(g=>g.publisher)).sort();
   const sel=(f,lbl,opts)=>!opts.length?"":`<div class="field"><label>${lbl}</label><select onchange="setFilter('${f}',this.value)"><option value="">All ${esc(lbl.toLowerCase())}</option>${opts.map(o=>`<option ${libFilter[f]===String(o)?"selected":""}>${esc(String(o))}</option>`).join("")}</select></div>`;
   const sealedN=all.filter(g=>g.sealed).length;
   const sealedCtl=sealedN?`<div class="field"><label>Condition</label><span class="sealchip${libFilter.sealed?' sel':''}" onclick="toggleSealedFilter(this)">🔒 Sealed only (${sealedN})${libFilter.sealed?' ✓':''}</span></div>`:"";
-  const controls=[sel("console","Console",consoles),sel("year","Year",years),sel("type","Type",types),sel("pub","Publisher",pubs)].filter(Boolean).join("")+sealedCtl||`<div class="mt" style="padding:8px 0">No filters available for this shelf yet.</div>`;
+  const controls=[sel("console","Console",consoles),sel("genre","Genre",genres),sel("year","Year",years),sel("type","Type",types),sel("pub","Publisher",pubs)].filter(Boolean).join("")+sealedCtl||`<div class="mt" style="padding:8px 0">No filters available for this shelf yet.</div>`;
   modal(`<div class="grab"></div><button class="x" onclick="closeModal()">×</button><h2>Filter · ${SHELF_LABEL[currentShelf]}</h2>${controls}<div class="actions"><button class="primary" onclick="closeModal()">Done</button>${libFilterActive()?'<button class="danger" onclick="clearFilters()">Clear</button>':''}</div>`);
 }
 function setFilter(f,val){libFilter[f]=val;renderLibrary();}
 function toggleSealedFilter(el){libFilter.sealed=!libFilter.sealed;if(el){el.classList.toggle("sel",libFilter.sealed);el.innerHTML="🔒 Sealed only"+(libFilter.sealed?" ✓":"");}renderLibrary();}
 function clearFilters(){libFilter={};renderLibrary();closeModal();}
+const NOCON="No console set";
+function statGo(f,val){currentShelf="collection";libFilter={[f]:val};switchView("library");renderLibrary();}   // Stats bar → Library filtered to exactly those games
 function kpiGo(shelf,sealed){currentShelf=shelf;libFilter=sealed?{sealed:true}:{};switchView("library");renderLibrary();}   // stat tile → jump to that Library list
 function wireLibrary(){
   document.getElementById("segs").addEventListener("click",e=>{const b=e.target.closest(".segbtn");if(!b)return;currentShelf=b.dataset.s;renderLibrary();});   // filters + search stay on when switching shelves (v2.17.3)
@@ -989,9 +995,9 @@ function renderStats(){
   const playPool=done.length+backlog.length;
   const comp=playPool?Math.round(done.length/playPool*100):0;
   const tally=(arr,keyfn)=>{const m={};arr.forEach(g=>(keyfn(g)||[]).forEach(k=>m[k]=(m[k]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
-  const plat=tally(owned,g=>consoleList(g)), genre=tally(owned,g=>g.genres);
+  const plat=tally(owned,g=>(g.consoles&&g.consoles.length)?g.consoles:[NOCON]),   /* untagged games get their own bar instead of inflating every platform IGDB lists */ genre=tally(owned,g=>g.genres);
   const maxp=plat[0]?plat[0][1]:1, maxg=genre[0]?genre[0][1]:1;
-  const bars=(rows,max,lim=7)=>rows.length?rows.slice(0,lim).map(([k,n],i)=>`<div class="bar2"><span class="lbl">${esc(k)}</span><div class="track"><div class="fill" style="width:${Math.round(n/max*100)}%;background:${PAL[i%PAL.length]}"></div></div><span class="n">${n}</span></div>`).join(""):`<div class="mt">Add games to see this.</div>`;
+  const bars=(rows,max,lim=7,f)=>rows.length?rows.slice(0,lim).map(([k,n],i)=>`<div class="bar2${f?' clk':''}"${f?` onclick="statGo('${f}',decodeURIComponent('${encodeURIComponent(k).replace(/'/g,"%27")}'))" role="button" tabindex="0" title="Show these ${n} games"`:""}><span class="lbl">${esc(k)}</span><div class="track"><div class="fill" style="width:${Math.round(n/max*100)}%;background:${PAL[i%PAL.length]}"></div></div><span class="n">${n}</span></div>`).join(""):`<div class="mt">Add games to see this.</div>`;
   const top=[...rated].sort((a,b)=>b.myRating-a.myRating).slice(0,5);
   const recent=[...done].filter(g=>g.completedDate).sort((a,b)=>b.completedDate.localeCompare(a.completedDate)).slice(0,10);
   const sealedN=owned.filter(g=>g.sealed).length;
@@ -1005,8 +1011,8 @@ function renderStats(){
     <div class="tiles6">${tiles.map(([l,v,c,shelf,sf])=>`<div class="stat${shelf?' clk':''}" ${shelf?`onclick="kpiGo('${shelf}',${sf})" role="button" tabindex="0"`:''} style="background:${c}14;border-color:${c}44"><div class="sn" style="color:${c}">${v}</div><div class="sk">${l}${shelf?' <span class="kparrow">›</span>':''}</div></div>`).join("")}</div>
     ${recent.length?`<div class="panel"><h3>Recently completed</h3><div class="row srow">${recent.map(libCard).join("")}</div></div>`:""}
     ${top.length?`<div class="panel"><h3>Top rated</h3>${top.map(g=>`<div class="bar2"><span class="lbl">${esc(g.name)}</span><div class="track"><div class="fill" style="width:${g.myRating*10}%;background:linear-gradient(90deg,#ffb020,#ff8a3d)"></div></div><span class="n">${g.myRating}</span></div>`).join("")}</div>`:""}
-    <div class="panel"><h3>By console</h3>${bars(plat,maxp,999)}</div>
-    <div class="panel"><h3>By genre</h3>${bars(genre,maxg)}</div>
+    <div class="panel"><h3>By console</h3>${bars(plat,maxp,999,'console')}</div>
+    <div class="panel"><h3>By genre</h3>${bars(genre,maxg,7,'genre')}</div>
     ${!owned.length?'<div class="empty">Add some games and your stats will fill in here.</div>':''}`;
 }
 
@@ -2159,9 +2165,10 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.17.4";
+const APP_VERSION="2.17.5";
 /* type: new | improved | fixed */
 const CHANGELOG=[
+  {v:"2.17.5",items:[["improved","Stats › By console counts only consoles you tagged; untagged games get a “No console set” bar so you can find and tag them"],["new","Tap any console or genre bar in Stats to see exactly those games in your Library"],["new","Genre filter in the Library filter sheet"]]},
   {v:"2.17.4",items:[["improved","Shelf counts (Collection, Backlog, Completed, Wishlist) follow your active filter and search"]]},
   {v:"2.17.3",items:[["fixed","Library filters stay on when you switch between Collection, Backlog, Completed and Wishlist"],["improved","The console filter works on the Wishlist too, by the console a game is coming to"]]},
   {v:"2.17.2",items:[["fixed","Collections count a remastered game as owned when you own the original — e.g. Super Mario All-Stars reads Owned for your NES Mario games, with the console you own it on"],["improved","North America first: Japan-only console names (Famicom, Super Famicom…) are hidden whenever the US console is listed"]]},
