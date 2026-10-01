@@ -575,13 +575,13 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.17.2</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.17.3</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.2</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.3</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🎯 For you</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -890,7 +890,7 @@ function libFilterActive(){return !!(libFilter.console||libFilter.year||libFilte
 function applyFilters(arr){
   const q=(libFilter.q||"").trim().toLowerCase();
   if(q)arr=arr.filter(g=>((g.name||"")+" "+consoleList(g).join(" ")+" "+((g.genres||[]).join(" "))+" "+(g.publisher||"")).toLowerCase().includes(q));
-  if(libFilter.console)arr=arr.filter(g=>(g.consoles||[]).includes(libFilter.console));
+  if(libFilter.console)arr=arr.filter(g=>consoleList(g).includes(libFilter.console));   // wishlist games have no owned console → match the console they release on
   if(libFilter.year)arr=arr.filter(g=>(g.released||"").slice(0,4)===libFilter.year);
   if(libFilter.type)arr=arr.filter(g=>gtLabel(g.gameType)===libFilter.type);
   if(libFilter.pub)arr=arr.filter(g=>(g.publisher||"")===libFilter.pub);
@@ -956,7 +956,7 @@ function renderLibrary(){
 function openFilters(){
   const all=by(currentShelf);
   const uniq=a=>[...new Set(a)].filter(Boolean);
-  const consoles=uniq(all.flatMap(g=>g.consoles||[])).sort();
+  const consoles=uniq(all.flatMap(g=>consoleList(g)).concat(libFilter.console?[libFilter.console]:[])).sort();
   const years=uniq(all.map(g=>(g.released||"").slice(0,4))).sort().reverse();
   const types=uniq(all.map(g=>gtLabel(g.gameType)));
   const pubs=uniq(all.map(g=>g.publisher)).sort();
@@ -971,7 +971,7 @@ function toggleSealedFilter(el){libFilter.sealed=!libFilter.sealed;if(el){el.cla
 function clearFilters(){libFilter={};renderLibrary();closeModal();}
 function kpiGo(shelf,sealed){currentShelf=shelf;libFilter=sealed?{sealed:true}:{};switchView("library");renderLibrary();}   // stat tile → jump to that Library list
 function wireLibrary(){
-  document.getElementById("segs").addEventListener("click",e=>{const b=e.target.closest(".segbtn");if(!b)return;currentShelf=b.dataset.s;libFilter=libFilter.q?{q:libFilter.q}:{};renderLibrary();});   // keep the active search when switching shelves
+  document.getElementById("segs").addEventListener("click",e=>{const b=e.target.closest(".segbtn");if(!b)return;currentShelf=b.dataset.s;renderLibrary();});   // filters + search stay on when switching shelves (v2.17.3)
   ["mtoggle","dtoggle"].forEach(id=>document.getElementById(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;libMode[currentShelf]=b.dataset.m;renderLibrary();}));
   const lb=document.getElementById("libBody");
   lb.addEventListener("change",e=>{const s=e.target.closest("select[data-f]");if(!s)return;libFilter[s.dataset.f]=s.value;renderLibrary();});
@@ -2159,9 +2159,10 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.17.2";
+const APP_VERSION="2.17.3";
 /* type: new | improved | fixed */
 const CHANGELOG=[
+  {v:"2.17.3",items:[["fixed","Library filters stay on when you switch between Collection, Backlog, Completed and Wishlist"],["improved","The console filter works on the Wishlist too, by the console a game is coming to"]]},
   {v:"2.17.2",items:[["fixed","Collections count a remastered game as owned when you own the original — e.g. Super Mario All-Stars reads Owned for your NES Mario games, with the console you own it on"],["improved","North America first: Japan-only console names (Famicom, Super Famicom…) are hidden whenever the US console is listed"]]},
   {v:"2.17.1",items:[["fixed","Search finds re-releases on other consoles — like the Wii Super Mario All-Stars — and tracks them as their own game"],["fixed","Search hides fan games and junk: unrated PC / web-browser fan projects and entries with no box art"]]},
   {v:"2.17.0",items:[["new","Upcoming shows only games coming to consoles you own, and each card says which ones (PS5 · Switch 2)"],["new","🎯 Upcoming games that match your taste or a series you play are badged and float to the front"],["fixed","Honest release dates — no more fake countdowns to Dec 31. Vague dates read Nov 2026, Q1 2027, 2027 or TBA"],["improved","Wishlist countdowns use the same honest dates"]]},
