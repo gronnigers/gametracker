@@ -575,13 +575,13 @@
       <a data-act="fortune"><span class="ic">🥠</span> Fortune</a>
       <a class="navlink" data-act="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Search</a>
     </div>
-    <div class="sidever"><span>GameTrack <span class="appver">v2.17.0</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
+    <div class="sidever"><span>GameTrack <span class="appver">v2.16.0</span></span><div class="row"><a data-act="whatsnew">What’s new</a><a data-act="checkupdate">Check for updates</a></div></div>
   </nav>
 
   <div class="main">
     <!-- DISCOVER -->
     <section class="view on" data-view="discover">
-      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.17.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
+      <div class="topbar mobileHead"><div><div class="tt">Home</div><div class="tsub vtag appver" data-act="whatsnew" style="font-size:9px;color:#3a3a42">v2.16.0</div></div><div class="sp"></div><button class="iconbtn" data-act="fortune" title="Surprise me">🥠</button></div>
       <div class="hero" id="hero"></div>
       <div class="rail"><h3>🎯 For you</h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-trend',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-trend"></div><button class="railnav next" onclick="railScroll('r-trend',1)" aria-label="Scroll right">›</button></div></div>
       <div class="rail"><h3 class="taphead" onclick="openUpcoming()">📅 Upcoming releases <span class="chev">›</span></h3><div class="railscroll"><button class="railnav prev" onclick="railScroll('r-up',-1)" aria-label="Scroll left">‹</button><div class="row" id="r-up"></div><button class="railnav next" onclick="railScroll('r-up',1)" aria-label="Scroll right">›</button></div></div>
@@ -840,7 +840,7 @@ function libCard(g){
     // out-now vs upcoming treatment (glow the ones you can grab, dim the ones still waiting)
     const ts=g.first_release_date?g.first_release_date:(g.released?Math.floor(new Date(g.released).getTime()/1000):null);
     if(ts){
-      if(ts*1000>Date.now()){const ri=relInfo(ts,g.dateFmt);wsClass=" ws-soon";wtag=`<div class="wtag soon">◷ ${esc(ri.txt)}</div>`;}
+      if(ts*1000>Date.now()){const d=daysUntil(ts);wsClass=" ws-soon";wtag=`<div class="wtag soon">◷ ${d<=0?"soon":"in "+d+"d"}</div>`;}
       else {wsClass=" ws-now";wtag=`<div class="wtag now">OUT NOW</div>`;}
     }
   }
@@ -865,7 +865,7 @@ function listRow(g){
   if(genre)chips.push(`<span class="lchip">${esc(genre)}</span>`);
   if(g.shelf==="wishlist"){
     const ts=g.first_release_date?g.first_release_date:(g.released?Math.floor(new Date(g.released).getTime()/1000):null);
-    if(ts){if(ts*1000>Date.now()){const ri=relInfo(ts,g.dateFmt);chips.push(`<span class="lchip back">◷ ${esc(ri.txt)}</span>`);}else chips.push(`<span class="lchip done">OUT NOW</span>`);}
+    if(ts){if(ts*1000>Date.now()){const d=daysUntil(ts);chips.push(`<span class="lchip back">◷ in ${d}d</span>`);}else chips.push(`<span class="lchip done">OUT NOW</span>`);}
   }else{
     if(g.completed)chips.push(`<span class="lchip done">✓ Completed</span>`);
     else if(g.backlog)chips.push(`<span class="lchip back">⏳ Backlog</span>`);
@@ -1012,11 +1012,9 @@ function candidate(g){return {igdbId:g.id,name:g.name,cover:g.cover&&g.cover.ima
   released:g.first_release_date?new Date(g.first_release_date*1000).toISOString().slice(0,10):null,
   platforms:(g.platforms||[]).map(p=>p.name||p).slice(0,4)};}
 function discCard(g,tag){
-  const isUp=tag==='Upcoming';
-  const t=tag?`<span class="tg ${isUp?'up':'tr'}">${isUp&&g._match?'🎯 For you':tag}</span>`:"";
+  const t=tag?`<span class="tg ${tag==='Upcoming'?'up':'tr'}">${tag}</span>`:"";
   const owned=famOwned(g);
-  const ri=isUp?relInfo(g.first_release_date,g._fmt):null;
-  const sub=owned?"✓ in "+SHELF_LABEL[owned.shelf]:isUp?`<span style="color:${ri.exact?(ri.days<=30?'#ff6b6b':'#f2b661'):'#9a9aa2'};font-weight:700">${esc(ri.txt)}</span>${g._myp&&g._myp.length?' · '+esc(g._myp.slice(0,2).join(' · ')):''}`:g._why?esc(g._why):(g.first_release_date?new Date(g.first_release_date*1000).toLocaleDateString(undefined,{month:'short',year:'numeric'}):"");
+  const sub=owned?"✓ in "+SHELF_LABEL[owned.shelf]:g._why?esc(g._why):(g.first_release_date?new Date(g.first_release_date*1000).toLocaleDateString(undefined,{month:'short',year:'numeric'}):"");
   const addFn=tag==='Upcoming'?`quickWishlist(${g.id})`:`chooseShelf(${g.id})`;
   const add=owned?`<span class="added">✓</span>`:`<button class="plus" data-gid="${g.id}" onclick="event.stopPropagation();${addFn}" aria-label="Add">+</button>`;
   return `<div class="c" onclick="openGame(${g.id})">
@@ -1035,7 +1033,7 @@ function wishCard(g){
   const ts=g.first_release_date, nowMs=Date.now();
   let sub;
   if(ts){
-    if(ts*1000>nowMs){const ri=relInfo(ts,g.dateFmt);sub=`<span style="color:${!ri.exact?'#9a9aa2':ri.days<=60?'#ff6b6b':'#f2b661'};font-weight:700">${esc(ri.txt)}</span>`;}
+    if(ts*1000>nowMs){const days=daysUntil(ts);sub=`<span style="color:${days<=60?'#ff6b6b':'#f2b661'};font-weight:700">${days<=0?"out now":"in "+days+"d"}</span>`;}
     else sub=new Date(ts*1000).getFullYear();
   }else{
     const d=g.released?new Date(g.released):null;
@@ -1068,7 +1066,7 @@ async function syncWishDates(force){
   if(wishSynced&&!force)return;
   wishSynced=true;
   const ids=[...new Set(wl.map(g=>g.igdbId))];
-  const rows=await igdb("games",`fields id,first_release_date,release_dates.date,release_dates.date_format; where id=(${ids.join(",")}); limit ${ids.length};`);
+  const rows=await igdb("games",`fields id,first_release_date; where id=(${ids.join(",")}); limit ${ids.length};`);
   if(!rows||!rows.length)return;
   const map={}; rows.forEach(r=>{if("first_release_date" in r)map[r.id]=r.first_release_date||null;});
   let changed=false;
@@ -1077,8 +1075,6 @@ async function syncWishDates(force){
     const ts=map[g.igdbId];
     const iso=ts?new Date(ts*1000).toISOString().slice(0,10):null;
     if(g.first_release_date!==ts){g.first_release_date=ts;changed=true;}
-    const row=rows.find(r=>r.id===g.igdbId);const fm=row?dateFmtOf({first_release_date:ts,release_dates:row.release_dates}):0;
-    if(g.dateFmt!==fm){g.dateFmt=fm;changed=true;}
     if(g.released!==iso){g.released=iso;changed=true;}
   });
   if(changed){renderWishRail();queueSave();}
@@ -1152,8 +1148,7 @@ function renderWheels(){
   const fresh=g=>!LIB.games.some(x=>x.igdbId===g.id);   // hide anything already tagged
   const t=document.getElementById("r-trend"), u=document.getElementById("r-up");
   if(t&&TREND.length){const tl=TREND.filter(fresh);t.innerHTML=tl.map(g=>discCard(g,"For you")).join("");if(t.closest(".rail"))t.closest(".rail").style.display=tl.length?"":"none";}
-  if(UPCOMING_RAW.length&&LIB_LOADED)UPCOMING=curateUpcoming(UPCOMING_RAW);
-  if(u&&UPCOMING.length){const ul=upRail(UPCOMING.filter(fresh)).slice(0,60);u.innerHTML=ul.map(g=>discCard(g,"Upcoming")).join("");if(u.closest(".rail"))u.closest(".rail").style.display=ul.length?"":"none";}
+  if(u&&UPCOMING.length){const ul=UPCOMING.filter(fresh);u.innerHTML=ul.map(g=>discCard(g,"Upcoming")).join("");if(u.closest(".rail"))u.closest(".rail").style.display=ul.length?"":"none";}
   startRoll("r-trend",1); startRoll("r-up",1);
 }
 async function quickWishlist(id){
@@ -1178,90 +1173,8 @@ function platLine(g){
   const uniq=[...new Set(ns)];
   return uniq.length?uniq.slice(0,4).join(" · ")+(uniq.length>4?" +"+(uniq.length-4):""):"";
 }
-/*UPENG*/
-/* =========================================================================
-   📅 Upcoming (v2.17.0)
-   • Honest dates — IGDB files "2027" / "Q1 2027" as the last day of the period,
-     so only EXACT dates get a countdown; the rest read "Nov 2026" / "Q1 2027" /
-     "2027" / "TBA" (from release_dates.date_format: 0 exact · 1 month · 2 year ·
-     3–6 Q1–Q4 · 7 TBD).
-   • Only your consoles — a game must ship on a console you own (your Collection).
-   • Taste — scored with the For You profile; matches get 🎯 and float up the rail.
-     🎯 = a series you play, a studio you like, a similar-games link, or a top-~12% taste fit.
-     Hype gate: 15+ (8+ on Switch/Switch 2), or 5+ for a real game with a strong match.
-   • "Your consoles" = consoles with 5+ owned games.
-   • Each card lists which of YOUR consoles it's coming to.
-   ========================================================================= */
-let UPCOMING_RAW=[];
-function dateFmtOf(g){
-  if(g.dateFmt!=null)return g.dateFmt;
-  const rd=(g.release_dates||[]).filter(r=>r.date);
-  const hit=rd.find(r=>r.date===g.first_release_date)||rd.sort((a,b)=>a.date-b.date)[0];
-  if(hit&&hit.date_format!=null)return hit.date_format;
-  const d=g.first_release_date?new Date(g.first_release_date*1000):null;
-  return d&&d.getUTCMonth()===11&&d.getUTCDate()===31?2:0;     // Dec 31 with no info = a year placeholder
-}
-/* label for a future release: {txt, exact, days} */
-function relInfo(ts,fmt){
-  if(!ts)return {txt:"TBA",exact:false};
-  const d=new Date(ts*1000), y=d.getUTCFullYear();
-  if(fmt===0||fmt==null){const days=daysUntil(ts);return {txt:days<=0?"out now":"in "+days+"d",exact:true,days};}
-  if(fmt===1)return {txt:d.toLocaleDateString(undefined,{month:'short',year:'numeric',timeZone:'UTC'}),exact:false};
-  if(fmt>=3&&fmt<=6)return {txt:"Q"+(fmt-2)+" "+y,exact:false};
-  if(fmt===7)return {txt:"TBA",exact:false};
-  return {txt:String(y),exact:false};
-}
-function myConsoleNames(){   // consoles you really play on = 5+ owned games tagged to it (a stray PC game doesn't flood the list)
-  const n={};LIB.games.forEach(g=>{if(g.shelf!=="wishlist")(g.consoles||[]).forEach(c=>n[c]=(n[c]||0)+1);});
-  return new Set(Object.keys(n).filter(c=>n[c]>=5));}
-function myPlatsFor(g,mine){return [...new Set((g.platforms||[]).map(p=>p.name||p).filter(n=>mine.has(n)).map(shortPlat))];}
-function upTaste(){
-  const P=fyLS(FY_PROF_KEY);if(!P)return null;
-  const T={g:{},th:{},fr:{},pp:{},dev:{}},sim={};const add=(m,k,w)=>{m[k]=(m[k]||0)+w;};
-  LIB.games.forEach(g=>{const p=P[g.igdbId];if(!p)return;
-    let w=1;if(g.shelf==="wishlist")w=2.5;if(g.backlog)w=2;if(g.completed)w=3;if(g.nowPlaying)w=3.5;
-    p.g.forEach(x=>add(T.g,x,w));p.th.forEach(x=>add(T.th,x,w));p.fr.forEach(x=>add(T.fr,x,w));p.pp.forEach(x=>add(T.pp,x,w));p.dev.forEach(x=>add(T.dev,x,w));
-    if(w>=2)p.sim.forEach(s=>add(sim,s,w));});
-  const mx=o=>Math.max(1,...Object.values(o));
-  return {T,sim,N:{g:mx(T.g),th:mx(T.th),pp:mx(T.pp)}};
-}
-function tasteOf(c,P){
-  if(!P)return {score:0,why:""};
-  const share=(m,n,v)=>v&&v.length?v.reduce((a,x)=>a+(m[x]||0),0)/(n*v.length):0;
-  const fr=(c.franchises||[]).some(x=>P.T.fr[x]);
-  const dv=(c.involved_companies||[]).some(x=>x.developer&&x.company&&(P.T.dev[x.company]||0)>=3);
-  const sm=P.sim[c.id]||0;
-  const taste=1.6*share(P.T.g,P.N.g,c.genres)+1.0*share(P.T.th,P.N.th,c.themes)+0.6*share(P.T.pp,P.N.pp,c.player_perspectives);
-  const score=taste+(fr?1.5:0)+(dv?0.8:0)+(sm?1:0);
-  const strong=fr||dv||!!sm;
-  const why=fr?"A series you play":dv?"From a studio you like":sm?"Like games you love":taste>=2.3?"Your kind of game":"";   // 2.3 ≈ top ~12% taste fit
-  return {score,why,strong};
-}
-function curateUpcoming(raw){
-  if(!raw||!raw.length)return [];
-  const mine=myConsoleNames(), P=upTaste(), useMine=mine.size>0;
-  const out=[];
-  raw.forEach(g=>{
-    const myp=myPlatsFor(g,mine);
-    if(useMine&&!myp.length)return;                                    // not coming to anything you own
-    const t=tasteOf(g,P), match=!!t.why;
-    const nin=(g.platforms||[]).some(p=>p.id===130||p.id===508);
-    const hype=g.hypes||0, real=[0,4,8,9,10].includes(g.game_type);   // bundles/ports/packs must clear the normal bar
-    if(!(hype>=15||(nin&&hype>=8)||(t.strong&&real&&hype>=5)))return; // hype gate, relaxed only for strong 🎯 matches
-    g._fmt=dateFmtOf(g); g._myp=myp; g._match=match; g._why=t.why; g._ts=t.score;
-    out.push(g);
-  });
-  return out;   // release-date order (rail re-ranks; timeline keeps date order)
-}
-function upRail(list){
-  // matches first (soonest first, exact dates before vague ones), then the rest in date order
-  const k=g=>(g._fmt===0?0:1);
-  return list.slice().sort((a,b)=>(b._match-a._match)||(k(a)-k(b))||(a.first_release_date-b.first_release_date));
-}
-
 function daysUntil(ts){return Math.max(0,Math.ceil((ts*1000-Date.now())/86400000));}
 function openUpcoming(){
-  if(UPCOMING_RAW.length&&LIB_LOADED)UPCOMING=curateUpcoming(UPCOMING_RAW);
   const games=(UPCOMING||[]).filter(g=>g.first_release_date).slice().sort((a,b)=>a.first_release_date-b.first_release_date);
   let body;
   if(!games.length){
@@ -1269,16 +1182,14 @@ function openUpcoming(){
   }else{
     let out="",curMonth="";
     games.forEach(g=>{
-      const d=new Date(g.first_release_date*1000), f=g._fmt!=null?g._fmt:dateFmtOf(g), y=d.getUTCFullYear();
-      const mk=f===0||f===1?d.toLocaleDateString(undefined,{month:'long',year:'numeric',timeZone:'UTC'}).toUpperCase()
-              :f>=3&&f<=6?"SOMETIME IN Q"+(f-2)+" "+y:f===7?"DATE TBA":"SOMETIME IN "+y;
+      const d=new Date(g.first_release_date*1000);
+      const mk=d.toLocaleDateString(undefined,{month:'long',year:'numeric'}).toUpperCase();
       if(mk!==curMonth){curMonth=mk;out+=`<div class="tlmhead">${mk}</div>`;}
-      const day=f===0?d.getUTCDate():f===1?"—":f>=3&&f<=6?"Q"+(f-2):f===7?"?":"'"+String(y).slice(2);
-      const mo=f===0||f===1?d.toLocaleDateString(undefined,{month:'short',timeZone:'UTC'}).toUpperCase():f===7?"TBA":String(y);
+      const day=d.getDate(), mo=d.toLocaleDateString(undefined,{month:'short'}).toUpperCase();
+      const du=daysUntil(g.first_release_date);
       const owned=famOwned(g);
-      const ri=relInfo(g.first_release_date,f);
-      const cd=ri.exact?`<span class="tlcount${ri.days<=30?' soon':''}">in ${ri.days} day${ri.days===1?"":"s"}</span>`:`<span class="tlcount" style="color:#9a9aa2">${esc(ri.txt)}</span>`;
-      const pl=(g._myp&&g._myp.length?g._myp.join(" · "):platLine(g))+(g._match?" · 🎯":"");
+      const cd=`<span class="tlcount${du<=30?' soon':''}">in ${du} day${du===1?"":"s"}</span>`;
+      const pl=platLine(g);
       out+=`<div class="tlitem" onclick="openGame(${g.id})">
         <div class="tlwhen"><div class="tld">${day}</div><div class="tlmo">${mo}</div></div>
         <div class="tlspine"><div class="tlcard">
@@ -1307,7 +1218,7 @@ async function _renderDiscover(){
   const TYPES="game_type=(0,3,4,8,9,10,11,13)";
   const [trendRaw,upRaw,annRaw]=await Promise.all([
     Promise.resolve([]),   /* generic Trending retired (v2.16.0) — the For You rail is built from your library by buildForYou() */
-    igdb("games",`fields name,cover.image_id,first_release_date,hypes,game_type,parent_game,platforms.name,platforms.id,release_dates.date,release_dates.date_format,release_dates.platform,genres,themes,franchises,player_perspectives,involved_companies.company,involved_companies.developer; where first_release_date>${now} & cover!=null & ${TYPES} & version_parent=null & hypes>=3; sort first_release_date asc; limit 500;`),
+    igdb("games",`fields name,cover.image_id,first_release_date,hypes,platforms.name,platforms.id; where first_release_date>${now} & cover!=null & ${TYPES} & (hypes>=15 | (platforms=(130,508) & hypes>=8)); sort first_release_date asc; limit 500;`),
     igdb("games",`fields name,cover.image_id,first_release_date,total_rating_count; where first_release_date!=null & first_release_date<${now} & total_rating_count>40 & cover!=null & ${TYPES}; sort total_rating_count desc; limit 500;`)
   ]);
   if(!upRaw.length&&!annRaw.length){                    // IGDB/Worker didn't answer — retry on its own instead of sticking blank
@@ -1315,7 +1226,7 @@ async function _renderDiscover(){
     return;
   }
   _discTries=0;
-  UPCOMING_RAW=upRaw; UPCOMING=curateUpcoming(upRaw);   // upcoming stays in release-date order
+  UPCOMING=upRaw;   // upcoming stays in release-date order
   THISWEEK=thisWeekList(annRaw);
   FEAT=TREND[0]||UPCOMING[0]||null;
   if(LIB_LOADED)renderForYou();                           // cached picks paint instantly; fresh ones compute in the background
@@ -2119,10 +2030,9 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
    worker activates → page reloads → "What's new" shows everything since the
    version this device last saw.
    ========================================================================= */
-const APP_VERSION="2.17.0";
+const APP_VERSION="2.16.0";
 /* type: new | improved | fixed */
 const CHANGELOG=[
-  {v:"2.17.0",items:[["new","Upcoming shows only games coming to consoles you own, and each card says which ones (PS5 · Switch 2)"],["new","🎯 Upcoming games that match your taste or a series you play are badged and float to the front"],["fixed","Honest release dates — no more fake countdowns to Dec 31. Vague dates read Nov 2026, Q1 2027, 2027 or TBA"],["improved","Wishlist countdowns use the same honest dates"]]},
   {v:"2.16.0",items:[["new","🎯 For You replaces Trending — picks based on what you’ve finished, your backlog, wishlist and ratings, from any era"],["new","Each pick says why (“Because you like Super Metroid”), and the top pick headlines Home"],["improved","Shovelware filtered out: real games only, well-reviewed, on consoles you own, never something you already have"],["fixed","Stats completion % now counts your backlog + finished games, not every game you own"]]},
   {v:"2.15.1",items:[["fixed","Home and Library load reliably on the first open — no more refreshing and clicking back and forth"],["fixed","If OneDrive or the games database is slow to answer, GameTrack keeps retrying on its own"],["improved","The browser-tab icon matches the random app icon"],["improved","Completed games get a green outline and a “✓ Completed” strip, like out-now Wishlist games"]]},
   {v:"2.15.0",items:[["new","Update notifications — GameTrack tells you when a new version is ready and updates in one tap"],["new","“What’s new” — after an update you see what changed, even if you skipped a few versions"],["new","Version, What’s new and Check for updates at the bottom of the sidebar (tap the version on iPhone Home)"],["improved","Works offline from cache if the network drops"]]},

@@ -3,7 +3,7 @@
    A new worker installs and WAITS; the page shows "Update ready" and sends
    SKIP_WAITING when the user taps Update. Only same-origin GETs are touched —
    Graph / login / IGDB Worker / YouTube calls pass straight through. */
-const VERSION = "2.16.0";
+const VERSION = "2.17.0";
 const CACHE = "gametrack-" + VERSION;
 const SHELL = ["./", "index.html"];
 
